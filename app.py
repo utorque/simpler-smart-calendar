@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from datetime import datetime, timedelta
-from models import db, Task, Location, ChangeLog, CalendarSource
+from models import db, Task, Space, ChangeLog, CalendarSource
 from config import Config
 import json
 import os
@@ -68,7 +68,7 @@ def create_task():
     task = Task(
         title=data['title'],
         description=data.get('description'),
-        location=data.get('location'),
+        space=data.get('space'),
         priority=data.get('priority', 0),
         deadline=datetime.fromisoformat(data['deadline']) if data.get('deadline') else None,
         estimated_duration=data.get('estimated_duration', 60)
@@ -104,7 +104,7 @@ def parse_task():
     task = Task(
         title=task_data['title'],
         description=task_data.get('description'),
-        location=task_data.get('location'),
+        space=task_data.get('space'),
         priority=task_data.get('priority', 0),
         deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
         estimated_duration=task_data.get('estimated_duration', 60)
@@ -138,8 +138,8 @@ def update_task(task_id):
         task.title = data['title']
     if 'description' in data:
         task.description = data['description']
-    if 'location' in data:
-        task.location = data['location']
+    if 'space' in data:
+        task.space = data['space']
     if 'priority' in data:
         task.priority = data['priority']
     if 'deadline' in data:
@@ -235,12 +235,12 @@ def auto_schedule():
 
     db.session.commit()
 
-    # Get locations and their constraints
-    locations = Location.query.all()
-    location_constraints = {loc.name: loc.get_time_constraints() for loc in locations}
+    # Get spaces and their constraints
+    spaces = Space.query.all()
+    space_constraints = {space.name: space.get_time_constraints() for space in spaces}
 
     # Schedule tasks
-    scheduled_tasks = schedule_tasks(tasks, external_events, location_constraints)
+    scheduled_tasks = schedule_tasks(tasks, external_events, space_constraints)
 
     # Update tasks with scheduled times
     for task_data in scheduled_tasks:
@@ -254,50 +254,53 @@ def auto_schedule():
     return jsonify({'success': True, 'scheduled_tasks': len(scheduled_tasks)})
 
 
-# Location endpoints
-@app.route('/api/locations', methods=['GET'])
+# Space endpoints
+@app.route('/api/spaces', methods=['GET'])
 @login_required
-def get_locations():
-    locations = Location.query.all()
-    return jsonify([loc.to_dict() for loc in locations])
+def get_spaces():
+    spaces = Space.query.all()
+    return jsonify([space.to_dict() for space in spaces])
 
 
-@app.route('/api/locations', methods=['POST'])
+@app.route('/api/spaces', methods=['POST'])
 @login_required
-def create_location():
+def create_space():
     data = request.json
 
-    location = Location(
-        name=data['name']
+    space = Space(
+        name=data['name'],
+        description=data.get('description', '')
     )
-    location.set_time_constraints(data.get('time_constraints', []))
+    space.set_time_constraints(data.get('time_constraints', []))
 
-    db.session.add(location)
+    db.session.add(space)
     db.session.commit()
 
-    return jsonify(location.to_dict()), 201
+    return jsonify(space.to_dict()), 201
 
 
-@app.route('/api/locations/<int:location_id>', methods=['PUT'])
+@app.route('/api/spaces/<int:space_id>', methods=['PUT'])
 @login_required
-def update_location(location_id):
-    location = Location.query.get_or_404(location_id)
+def update_space(space_id):
+    space = Space.query.get_or_404(space_id)
     data = request.json
 
     if 'name' in data:
-        location.name = data['name']
+        space.name = data['name']
+    if 'description' in data:
+        space.description = data['description']
     if 'time_constraints' in data:
-        location.set_time_constraints(data['time_constraints'])
+        space.set_time_constraints(data['time_constraints'])
 
     db.session.commit()
-    return jsonify(location.to_dict())
+    return jsonify(space.to_dict())
 
 
-@app.route('/api/locations/<int:location_id>', methods=['DELETE'])
+@app.route('/api/spaces/<int:space_id>', methods=['DELETE'])
 @login_required
-def delete_location(location_id):
-    location = Location.query.get_or_404(location_id)
-    db.session.delete(location)
+def delete_space(space_id):
+    space = Space.query.get_or_404(space_id)
+    db.session.delete(space)
     db.session.commit()
     return jsonify({'success': True})
 
@@ -362,26 +365,26 @@ def get_logs():
 with app.app_context():
     db.create_all()
 
-    # Create default locations if they don't exist
-    if Location.query.count() == 0:
-        default_locations = [
-            {'name': 'work', 'constraints': [
+    # Create default spaces if they don't exist
+    if Space.query.count() == 0:
+        default_spaces = [
+            {'name': 'work', 'description': 'Work-related tasks, meetings, and projects during office hours', 'constraints': [
                 {'day': 1, 'start': '09:00', 'end': '17:00'},
                 {'day': 2, 'start': '09:00', 'end': '17:00'},
                 {'day': 3, 'start': '09:00', 'end': '17:00'},
                 {'day': 4, 'start': '09:00', 'end': '17:00'},
                 {'day': 5, 'start': '09:00', 'end': '17:00'}
             ]},
-            {'name': 'study', 'constraints': []},
-            {'name': 'association', 'constraints': [
+            {'name': 'study', 'description': 'Learning activities, courses, homework, and educational tasks', 'constraints': []},
+            {'name': 'association', 'description': 'Community group, club, or volunteer organization activities', 'constraints': [
                 {'day': 3, 'start': '18:00', 'end': '22:00'}
             ]}
         ]
 
-        for loc_data in default_locations:
-            loc = Location(name=loc_data['name'])
-            loc.set_time_constraints(loc_data['constraints'])
-            db.session.add(loc)
+        for space_data in default_spaces:
+            space = Space(name=space_data['name'], description=space_data['description'])
+            space.set_time_constraints(space_data['constraints'])
+            db.session.add(space)
 
         db.session.commit()
 

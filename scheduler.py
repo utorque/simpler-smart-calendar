@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 
 
-def schedule_tasks(tasks, external_events, location_constraints):
+def schedule_tasks(tasks, external_events, space_constraints):
     """
-    Schedule tasks based on priority, deadlines, and location constraints.
+    Schedule tasks based on priority, deadlines, and space constraints.
 
     Args:
         tasks: List of Task objects to schedule
         external_events: List of external calendar events (dicts with start, end)
-        location_constraints: Dict of location names to their time constraints
+        space_constraints: Dict of space names to their time constraints
 
     Returns:
         List of dicts with task id, scheduled_start, and scheduled_end
@@ -51,8 +51,8 @@ def schedule_tasks(tasks, external_events, location_constraints):
             current_time,
             duration,
             busy_slots,
-            task.location,
-            location_constraints,
+            task.space,
+            space_constraints,
             deadline
         )
 
@@ -77,7 +77,7 @@ def schedule_tasks(tasks, external_events, location_constraints):
     return scheduled_tasks
 
 
-def find_next_available_slot(start_time, duration, busy_slots, location, location_constraints, deadline=None):
+def find_next_available_slot(start_time, duration, busy_slots, space, space_constraints, deadline=None):
     """
     Find the next available time slot that satisfies all constraints.
 
@@ -85,8 +85,8 @@ def find_next_available_slot(start_time, duration, busy_slots, location, locatio
         start_time: datetime to start searching from
         duration: timedelta of task duration
         busy_slots: List of busy time slots
-        location: Task location name
-        location_constraints: Dict of location constraints
+        space: Task space name
+        space_constraints: Dict of space constraints
         deadline: Optional deadline datetime
 
     Returns:
@@ -104,12 +104,12 @@ def find_next_available_slot(start_time, duration, busy_slots, location, locatio
     while current < max_search_time:
         slot_end = current + duration
 
-        # Check if this slot is within location constraints
-        if not is_within_location_constraints(current, slot_end, location, location_constraints):
-            # Move to next valid time for this location
-            current = get_next_valid_time_for_location(current, location, location_constraints)
+        # Check if this slot is within space constraints
+        if not is_within_space_constraints(current, slot_end, space, space_constraints):
+            # Move to next valid time for this space
+            current = get_next_valid_time_for_space(current, space, space_constraints)
             if current is None:
-                # No valid time found within location constraints
+                # No valid time found within space constraints
                 return None
             continue
 
@@ -141,13 +141,13 @@ def slots_overlap(start1, end1, start2, end2):
     return start1 < end2 and end1 > start2
 
 
-def is_within_location_constraints(start, end, location, location_constraints):
+def is_within_space_constraints(start, end, space, space_constraints):
     """
-    Check if a time slot is within the constraints for a given location.
+    Check if a time slot is within the constraints for a given space.
 
-    Location constraints format:
+    Space constraints format:
     {
-        'location_name': [
+        'space_name': [
             {'day': 1, 'start': '09:00', 'end': '17:00'},  # Monday
             {'day': 3, 'start': '18:00', 'end': '22:00'}   # Wednesday
         ]
@@ -155,14 +155,14 @@ def is_within_location_constraints(start, end, location, location_constraints):
 
     day: 0=Monday, 1=Tuesday, ..., 6=Sunday
     """
-    if not location or location not in location_constraints:
+    if not space or space not in space_constraints:
         # No constraints, any time is fine
         return True
 
-    constraints = location_constraints[location]
+    constraints = space_constraints[space]
 
     if not constraints or len(constraints) == 0:
-        # No constraints for this location
+        # No constraints for this space
         return True
 
     # Check if the time slot falls within any of the allowed time windows
@@ -187,14 +187,14 @@ def is_within_location_constraints(start, end, location, location_constraints):
     return False
 
 
-def get_next_valid_time_for_location(current, location, location_constraints):
+def get_next_valid_time_for_space(current, space, space_constraints):
     """
-    Get the next valid time for a location based on its constraints.
+    Get the next valid time for a space based on its constraints.
     """
-    if not location or location not in location_constraints:
+    if not space or space not in space_constraints:
         return current
 
-    constraints = location_constraints[location]
+    constraints = space_constraints[space]
 
     if not constraints or len(constraints) == 0:
         return current

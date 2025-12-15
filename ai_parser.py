@@ -10,7 +10,7 @@ def parse_task_with_ai(text, api_key, system_prompt):
     Returns a dictionary with:
     - title: Task title
     - description: Task description
-    - location: Task location (work, study, association, etc.)
+    - space: Task space (work, study, association, etc.)
     - priority: Priority level (0-10)
     - deadline: ISO format datetime string or None
     - estimated_duration: Duration in minutes
@@ -20,7 +20,7 @@ def parse_task_with_ai(text, api_key, system_prompt):
         return {
             'title': text[:100],
             'description': text,
-            'location': 'general',
+            'space': 'general',
             'priority': 5,
             'deadline': None,
             'estimated_duration': 60

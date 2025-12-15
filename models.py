@@ -10,7 +10,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
     description = db.Column(db.Text)
-    location = db.Column(db.String(100))  # work, study, association, etc.
+    space = db.Column(db.String(100))  # work, study, association, etc.
     priority = db.Column(db.Integer, default=0)  # Higher number = higher priority
     deadline = db.Column(db.DateTime)
     estimated_duration = db.Column(db.Integer)  # in minutes
@@ -25,7 +25,7 @@ class Task(db.Model):
             'id': self.id,
             'title': self.title,
             'description': self.description,
-            'location': self.location,
+            'space': self.space,
             'priority': self.priority,
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'estimated_duration': self.estimated_duration,
@@ -37,11 +37,12 @@ class Task(db.Model):
         }
 
 
-class Location(db.Model):
-    __tablename__ = 'locations'
+class Space(db.Model):
+    __tablename__ = 'spaces'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text)  # Plain text description of the space (context, purpose, etc.)
     time_constraints = db.Column(db.Text)  # JSON string of time constraints
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -57,6 +58,7 @@ class Location(db.Model):
         return {
             'id': self.id,
             'name': self.name,
+            'description': self.description,
             'time_constraints': self.get_time_constraints(),
             'created_at': self.created_at.isoformat()
         }
@@ -67,7 +69,7 @@ class ChangeLog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     action = db.Column(db.String(100), nullable=False)  # create, update, delete, reorder, reschedule
-    entity_type = db.Column(db.String(50), nullable=False)  # task, location
+    entity_type = db.Column(db.String(50), nullable=False)  # task, space
     entity_id = db.Column(db.Integer)
     old_value = db.Column(db.Text)  # JSON string
     new_value = db.Column(db.Text)  # JSON string
