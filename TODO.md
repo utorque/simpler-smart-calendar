@@ -1,7 +1,9 @@
-[] make the calendar import work
-[] task button add context and re-plan
-[] get all tasks for context or something ?
-[] lock tasks on modification in the calendar
-[] list available models and choose accordingly
-[] add learn user habits 
-[] optimize system prompt
+- [] task button add context and re-plan
+- [] button to automatically do docker-compose pull and docker-compose up -d from the web app (supersecure lol)
+- [] add the current date and time to the planner so it does not plan things for too early
+- [] add a done button or sth
+- [] get all tasks for context or something ?  
+- [] lock/freeze tasks on modification in the calendar (ctrl click or sth)
+- [] list available models and choose accordingly  
+- [] add learn user habits   
+- [] optimize system prompt  
