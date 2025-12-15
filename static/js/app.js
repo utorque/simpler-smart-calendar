@@ -77,14 +77,9 @@ function initSortable() {
 
 // Load tasks
 async function loadTasks() {
-    try {
-        const response = await fetch('/api/tasks');
-        tasks = await response.json();
-        renderTasks();
-    } catch (error) {
-        console.error('Error loading tasks:', error);
-        showAlert('Error loading tasks', 'danger');
-    }
+    const response = await fetch('/api/tasks');
+    tasks = await response.json();
+    renderTasks();
 }
 
 // Render tasks
@@ -147,31 +142,26 @@ async function parseTask() {
     btn.innerHTML = '<span class="loading"></span> Creating...';
     btn.disabled = true;
 
-    try {
-        const response = await fetch('/api/tasks/parse', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text })
-        });
+    const response = await fetch('/api/tasks/parse', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text })
+    });
 
-        if (response.ok) {
-            input.value = '';
-            await loadTasks();
-            calendar.refetchEvents();
-            showAlert('Task created successfully!', 'success');
-        } else {
-            const error = await response.json();
-            showAlert(error.error || 'Error creating task', 'danger');
-        }
-    } catch (error) {
-        console.error('Error parsing task:', error);
-        showAlert('Error creating task', 'danger');
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    if (response.ok) {
+        input.value = '';
+        await loadTasks();
+        calendar.refetchEvents();
+        showAlert('Task created successfully!', 'success');
+    } else {
+        const error = await response.json();
+        showAlert(error.error || 'Error creating task', 'danger');
     }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 }
 
 // Auto-schedule tasks
@@ -181,75 +171,65 @@ async function autoSchedule() {
     btn.innerHTML = '<span class="loading"></span> Scheduling...';
     btn.disabled = true;
 
-    try {
-        const response = await fetch('/api/schedule', {
-            method: 'POST'
-        });
+    const response = await fetch('/api/schedule', {
+        method: 'POST'
+    });
 
-        if (response.ok) {
-            const result = await response.json();
-            await loadTasks();
-            calendar.refetchEvents();
-            showAlert(`Successfully scheduled ${result.scheduled_tasks} tasks!`, 'success');
-        } else {
-            const error = await response.json();
-            showAlert(error.error || 'Error scheduling tasks', 'danger');
-        }
-    } catch (error) {
-        console.error('Error scheduling:', error);
-        showAlert('Error scheduling tasks', 'danger');
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    if (response.ok) {
+        const result = await response.json();
+        await loadTasks();
+        calendar.refetchEvents();
+        showAlert(`Successfully scheduled ${result.scheduled_tasks} tasks!`, 'success');
+    } else {
+        const error = await response.json();
+        showAlert(error.error || 'Error scheduling tasks', 'danger');
     }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 }
 
 // Load calendar events
 async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    try {
-        // Load tasks
-        const taskResponse = await fetch('/api/tasks');
-        const tasks = await taskResponse.json();
+    // Load tasks
+    const taskResponse = await fetch('/api/tasks');
+    const tasks = await taskResponse.json();
 
-        // Load external events
-        const externalResponse = await fetch('/api/external-events');
-        const externalEvents = await externalResponse.json();
+    // Load external events
+    const externalResponse = await fetch('/api/external-events');
+    const externalEvents = await externalResponse.json();
 
-        // Format task events
-        const taskEvents = tasks
-            .filter(task => task.scheduled_start && task.scheduled_end && !task.completed)
-            .map(task => ({
-                id: `task-${task.id}`,
-                title: task.title,
-                start: task.scheduled_start,
-                end: task.scheduled_end,
-                className: 'task-event',
-                extendedProps: {
-                    type: 'task',
-                    taskId: task.id,
-                    task: task
-                }
-            }));
-
-        // Format external events
-        const formattedExternalEvents = externalEvents.map((event, index) => ({
-            id: `external-${index}`,
-            title: event.title,
-            start: event.start,
-            end: event.end,
-            className: 'external-event',
-            editable: false,
+    // Format task events
+    const taskEvents = tasks
+        .filter(task => task.scheduled_start && task.scheduled_end && !task.completed)
+        .map(task => ({
+            id: `task-${task.id}`,
+            title: task.title,
+            start: task.scheduled_start,
+            end: task.scheduled_end,
+            className: 'task-event',
             extendedProps: {
-                type: 'external',
-                description: event.description
+                type: 'task',
+                taskId: task.id,
+                task: task
             }
         }));
 
-        successCallback([...taskEvents, ...formattedExternalEvents]);
-    } catch (error) {
-        console.error('Error loading calendar events:', error);
-        failureCallback(error);
-    }
+    // Format external events
+    const formattedExternalEvents = externalEvents.map((event, index) => ({
+        id: `external-${index}`,
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        className: 'external-event',
+        editable: false,
+        extendedProps: {
+            type: 'external',
+            description: event.description
+        }
+    }));
+
+    successCallback([...taskEvents, ...formattedExternalEvents]);
 }
 
 // Handle event click
@@ -270,14 +250,8 @@ async function handleEventDrop(info) {
         const newStart = event.start.toISOString();
         const newEnd = event.end.toISOString();
 
-        try {
-            await updateTaskSchedule(taskId, newStart, newEnd);
-            await loadTasks();
-        } catch (error) {
-            console.error('Error updating task schedule:', error);
-            info.revert();
-            showAlert('Error updating task schedule', 'danger');
-        }
+        await updateTaskSchedule(taskId, newStart, newEnd);
+        await loadTasks();
     }
 }
 
@@ -293,24 +267,18 @@ async function handleEventResize(info) {
         // Calculate new duration
         const duration = Math.round((event.end - event.start) / 60000); // in minutes
 
-        try {
-            await fetch(`/api/tasks/${taskId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    scheduled_start: newStart,
-                    scheduled_end: newEnd,
-                    estimated_duration: duration
-                })
-            });
-            await loadTasks();
-        } catch (error) {
-            console.error('Error updating task:', error);
-            info.revert();
-            showAlert('Error updating task', 'danger');
-        }
+        await fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                scheduled_start: newStart,
+                scheduled_end: newEnd,
+                estimated_duration: duration
+            })
+        });
+        await loadTasks();
     }
 }
 
@@ -334,19 +302,14 @@ async function handleTaskReorder(evt) {
         parseInt(item.dataset.taskId)
     );
 
-    try {
-        await fetch('/api/tasks/reorder', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ task_ids: taskIds })
-        });
-        await loadTasks();
-    } catch (error) {
-        console.error('Error reordering tasks:', error);
-        showAlert('Error reordering tasks', 'danger');
-    }
+    await fetch('/api/tasks/reorder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ task_ids: taskIds })
+    });
+    await loadTasks();
 }
 
 // Edit task
@@ -386,23 +349,18 @@ async function saveTask() {
                  new Date(document.getElementById('editDeadline').value).toISOString() : null
     };
 
-    try {
-        await fetch(`/api/tasks/${taskId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
+    await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
 
-        taskModal.hide();
-        await loadTasks();
-        calendar.refetchEvents();
-        showAlert('Task updated successfully!', 'success');
-    } catch (error) {
-        console.error('Error updating task:', error);
-        showAlert('Error updating task', 'danger');
-    }
+    taskModal.hide();
+    await loadTasks();
+    calendar.refetchEvents();
+    showAlert('Task updated successfully!', 'success');
 }
 
 // Delete task
@@ -411,30 +369,21 @@ async function deleteTask() {
 
     const taskId = parseInt(document.getElementById('editTaskId').value);
 
-    try {
-        await fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE'
-        });
+    await fetch(`/api/tasks/${taskId}`, {
+        method: 'DELETE'
+    });
 
-        taskModal.hide();
-        await loadTasks();
-        calendar.refetchEvents();
-        showAlert('Task deleted successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting task:', error);
-        showAlert('Error deleting task', 'danger');
-    }
+    taskModal.hide();
+    await loadTasks();
+    calendar.refetchEvents();
+    showAlert('Task deleted successfully!', 'success');
 }
 
 // Load locations
 async function loadLocations() {
-    try {
-        const response = await fetch('/api/locations');
-        locations = await response.json();
-        updateLocationSelects();
-    } catch (error) {
-        console.error('Error loading locations:', error);
-    }
+    const response = await fetch('/api/locations');
+    locations = await response.json();
+    updateLocationSelects();
 }
 
 // Update location selects
@@ -479,26 +428,22 @@ async function showCalendarModal() {
 
 // Load calendar sources
 async function loadCalendarSources() {
-    try {
-        const response = await fetch('/api/calendar-sources');
-        const sources = await response.json();
+    const response = await fetch('/api/calendar-sources');
+    const sources = await response.json();
 
-        const list = document.getElementById('existingCalendars');
-        if (sources.length > 0) {
-            list.innerHTML = '<h6 class="mb-2">Existing Calendars:</h6>' +
-                sources.map(source => `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>${escapeHtml(source.name)}</span>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCalendarSource(${source.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `).join('');
-        } else {
-            list.innerHTML = '';
-        }
-    } catch (error) {
-        console.error('Error loading calendar sources:', error);
+    const list = document.getElementById('existingCalendars');
+    if (sources.length > 0) {
+        list.innerHTML = '<h6 class="mb-2">Existing Calendars:</h6>' +
+            sources.map(source => `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${escapeHtml(source.name)}</span>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCalendarSource(${source.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+    } else {
+        list.innerHTML = '';
     }
 }
 
@@ -512,52 +457,38 @@ async function saveCalendar() {
         return;
     }
 
-    try {
-        await fetch('/api/calendar-sources', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name, ics_url: url })
-        });
+    await fetch('/api/calendar-sources', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, ics_url: url })
+    });
 
-        document.getElementById('calendarName').value = '';
-        document.getElementById('calendarUrl').value = '';
-        await loadCalendarSources();
-        calendar.refetchEvents();
-        showAlert('Calendar added successfully!', 'success');
-    } catch (error) {
-        console.error('Error adding calendar:', error);
-        showAlert('Error adding calendar', 'danger');
-    }
+    document.getElementById('calendarName').value = '';
+    document.getElementById('calendarUrl').value = '';
+    await loadCalendarSources();
+    calendar.refetchEvents();
+    showAlert('Calendar added successfully!', 'success');
 }
 
 // Delete calendar source
 async function deleteCalendarSource(sourceId) {
     if (!confirm('Are you sure you want to remove this calendar?')) return;
 
-    try {
-        await fetch(`/api/calendar-sources/${sourceId}`, {
-            method: 'DELETE'
-        });
+    await fetch(`/api/calendar-sources/${sourceId}`, {
+        method: 'DELETE'
+    });
 
-        await loadCalendarSources();
-        calendar.refetchEvents();
-        showAlert('Calendar removed successfully!', 'success');
-    } catch (error) {
-        console.error('Error deleting calendar:', error);
-        showAlert('Error deleting calendar', 'danger');
-    }
+    await loadCalendarSources();
+    calendar.refetchEvents();
+    showAlert('Calendar removed successfully!', 'success');
 }
 
 // Logout
 async function logout() {
-    try {
-        await fetch('/logout', { method: 'POST' });
-        window.location.href = '/login';
-    } catch (error) {
-        console.error('Error logging out:', error);
-    }
+    await fetch('/logout', { method: 'POST' });
+    window.location.href = '/login';
 }
 
 // Utility functions

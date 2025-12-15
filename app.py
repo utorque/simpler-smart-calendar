@@ -99,34 +99,31 @@ def parse_task():
     if not text:
         return jsonify({'error': 'No text provided'}), 400
 
-    try:
-        task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], app.config['SYSTEM_PROMPT'])
+    task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], app.config['SYSTEM_PROMPT'])
 
-        task = Task(
-            title=task_data['title'],
-            description=task_data.get('description'),
-            location=task_data.get('location'),
-            priority=task_data.get('priority', 0),
-            deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
-            estimated_duration=task_data.get('estimated_duration', 60)
-        )
+    task = Task(
+        title=task_data['title'],
+        description=task_data.get('description'),
+        location=task_data.get('location'),
+        priority=task_data.get('priority', 0),
+        deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
+        estimated_duration=task_data.get('estimated_duration', 60)
+    )
 
-        db.session.add(task)
-        db.session.commit()
+    db.session.add(task)
+    db.session.commit()
 
-        # Log the creation
-        log = ChangeLog(
-            action='create',
-            entity_type='task',
-            entity_id=task.id,
-            new_value=json.dumps(task.to_dict())
-        )
-        db.session.add(log)
-        db.session.commit()
+    # Log the creation
+    log = ChangeLog(
+        action='create',
+        entity_type='task',
+        entity_id=task.id,
+        new_value=json.dumps(task.to_dict())
+    )
+    db.session.add(log)
+    db.session.commit()
 
-        return jsonify(task.to_dict()), 201
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify(task.to_dict()), 201
 
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
@@ -225,39 +222,36 @@ def reorder_tasks():
 @app.route('/api/schedule', methods=['POST'])
 @login_required
 def auto_schedule():
-    try:
-        # Get all incomplete tasks
-        tasks = Task.query.filter_by(completed=False).order_by(Task.priority.desc(), Task.deadline.asc()).all()
+    # Get all incomplete tasks
+    tasks = Task.query.filter_by(completed=False).order_by(Task.priority.desc(), Task.deadline.asc()).all()
 
-        # Get external calendar events
-        external_events = []
-        calendar_sources = CalendarSource.query.filter_by(enabled=True).all()
-        for source in calendar_sources:
-            events = fetch_external_events(source.ics_url)
-            external_events.extend(events)
-            source.last_fetched = datetime.utcnow()
+    # Get external calendar events
+    external_events = []
+    calendar_sources = CalendarSource.query.filter_by(enabled=True).all()
+    for source in calendar_sources:
+        events = fetch_external_events(source.ics_url)
+        external_events.extend(events)
+        source.last_fetched = datetime.utcnow()
 
-        db.session.commit()
+    db.session.commit()
 
-        # Get locations and their constraints
-        locations = Location.query.all()
-        location_constraints = {loc.name: loc.get_time_constraints() for loc in locations}
+    # Get locations and their constraints
+    locations = Location.query.all()
+    location_constraints = {loc.name: loc.get_time_constraints() for loc in locations}
 
-        # Schedule tasks
-        scheduled_tasks = schedule_tasks(tasks, external_events, location_constraints)
+    # Schedule tasks
+    scheduled_tasks = schedule_tasks(tasks, external_events, location_constraints)
 
-        # Update tasks with scheduled times
-        for task_data in scheduled_tasks:
-            task = Task.query.get(task_data['id'])
-            if task:
-                task.scheduled_start = task_data['scheduled_start']
-                task.scheduled_end = task_data['scheduled_end']
+    # Update tasks with scheduled times
+    for task_data in scheduled_tasks:
+        task = Task.query.get(task_data['id'])
+        if task:
+            task.scheduled_start = task_data['scheduled_start']
+            task.scheduled_end = task_data['scheduled_end']
 
-        db.session.commit()
+    db.session.commit()
 
-        return jsonify({'success': True, 'scheduled_tasks': len(scheduled_tasks)})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'success': True, 'scheduled_tasks': len(scheduled_tasks)})
 
 
 # Location endpoints
@@ -345,17 +339,14 @@ def delete_calendar_source(source_id):
 @app.route('/api/external-events', methods=['GET'])
 @login_required
 def get_external_events():
-    try:
-        all_events = []
-        sources = CalendarSource.query.filter_by(enabled=True).all()
+    all_events = []
+    sources = CalendarSource.query.filter_by(enabled=True).all()
 
-        for source in sources:
-            events = fetch_external_events(source.ics_url)
-            all_events.extend(events)
+    for source in sources:
+        events = fetch_external_events(source.ics_url)
+        all_events.extend(events)
 
-        return jsonify(all_events)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return jsonify(all_events)
 
 
 # Change log endpoints
@@ -396,4 +387,4 @@ with app.app_context():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=53000, debug=True)
