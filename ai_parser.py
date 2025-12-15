@@ -1,11 +1,11 @@
-from openai import OpenAI
+from anthropic import Anthropic
 import json
 from datetime import datetime, timedelta
 
 
-def parse_task_with_ai(text, api_key):
+def parse_task_with_ai(text, api_key, system_prompt):
     """
-    Parse a text input using OpenAI to extract task information.
+    Parse a text input using Anthropic Claude to extract task information.
 
     Returns a dictionary with:
     - title: Task title
@@ -26,39 +26,37 @@ def parse_task_with_ai(text, api_key):
             'estimated_duration': 60
         }
 
-    client = OpenAI(api_key=api_key)
+    client = Anthropic(api_key=api_key)
 
-    system_prompt = """You are a task parsing assistant for an ADHD-friendly task manager.
-Extract task information from the user's input and return a JSON object with the following fields:
-- title: A clear, concise task title (max 100 chars)
-- description: Full task description
-- location: One of: work, study, association, personal, or another appropriate category
-- priority: 0-10, where 10 is highest priority. Base this on urgency words (urgent, important, asap, etc.)
-- deadline: ISO format datetime string if mentioned, or null. If only a date is mentioned, set time to 23:59. If relative time like "tomorrow" or "next week", calculate from today.
-- estimated_duration: Estimated duration in minutes (default 60 if not specified)
-
-Today's date is: """ + datetime.now().strftime('%Y-%m-%d') + """
-
-Examples:
-Input: "Finish the presentation for tomorrow's meeting at work, should take about 2 hours"
-Output: {"title": "Finish presentation for meeting", "description": "Finish the presentation for tomorrow's meeting at work", "location": "work", "priority": 8, "deadline": "tomorrow at 23:59", "estimated_duration": 120}
-
-Input: "Study for exam next Friday, very important"
-Output: {"title": "Study for exam", "description": "Study for exam next Friday, very important", "location": "study", "priority": 9, "deadline": "next Friday at 23:59", "estimated_duration": 180}
-
-Return ONLY the JSON object, no other text."""
+    # Add today's date to the user message for context
+    user_message = f"Today's date is {datetime.now().strftime('%Y-%m-%d')}.\n\nTask to parse:\n{text}"
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+        response = client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=1024,
+            temperature=0.3,
+            system=system_prompt,
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text}
-            ],
-            temperature=0.3
+                {"role": "user", "content": user_message}
+            ]
         )
 
-        result = json.loads(response.choices[0].message.content)
+        # Extract text from response
+        response_text = response.content[0].text
+
+        # Try to extract JSON from the response
+        # Sometimes Claude might include markdown code blocks
+        if '```json' in response_text:
+            json_start = response_text.find('```json') + 7
+            json_end = response_text.find('```', json_start)
+            response_text = response_text[json_start:json_end].strip()
+        elif '```' in response_text:
+            json_start = response_text.find('```') + 3
+            json_end = response_text.find('```', json_start)
+            response_text = response_text[json_start:json_end].strip()
+
+        result = json.loads(response_text)
 
         # Process deadline - convert relative dates to absolute
         if result.get('deadline'):

@@ -23,7 +23,7 @@ A simple, fast, and intuitive web application designed specifically for people w
 
 ### Prerequisites
 - Docker and Docker Compose installed
-- OpenAI API key (for AI task parsing)
+- Anthropic API key (for AI task parsing)
 
 ### Installation
 
@@ -40,7 +40,7 @@ cp .env.example .env
 
 3. Edit `.env` and set your configuration:
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 APP_PASSWORD=your_secure_password_here
 SECRET_KEY=your_random_secret_key_here
 FLASK_ENV=production
@@ -146,7 +146,7 @@ python app.py
 
 ### Environment Variables
 
-- `OPENAI_API_KEY`: Your OpenAI API key for AI task parsing
+- `ANTHROPIC_API_KEY`: Your Anthropic API key for AI task parsing (get one at https://console.anthropic.com/)
 - `APP_PASSWORD`: Single password to access the application
 - `SECRET_KEY`: Secret key for Flask sessions (generate a random string)
 - `FLASK_ENV`: Set to `production` for production deployment
@@ -159,6 +159,14 @@ The app comes with three default locations:
 - **association**: Wednesday, 18:00-22:00
 
 You can modify or add more locations through the UI.
+
+### AI Task Parsing
+
+The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system prompt is stored in `prompt.md` and loaded once on application startup. This makes it easy to customize the AI's behavior without modifying code:
+
+1. Edit `prompt.md` to adjust how tasks are parsed
+2. Restart the application to load the updated prompt
+3. The prompt includes guidelines for extracting titles, locations, priorities, deadlines, and durations
 
 ## API Endpoints
 
@@ -193,7 +201,7 @@ You can modify or add more locations through the UI.
 ### Backend
 - **Flask**: Web framework
 - **SQLite**: Database for tasks, locations, and logs
-- **OpenAI API**: AI-powered task parsing
+- **Anthropic Claude**: AI-powered task parsing (using Claude 3.5 Haiku)
 - **icalendar**: ICS calendar parsing
 
 ### Frontend

@@ -100,7 +100,7 @@ def parse_task():
         return jsonify({'error': 'No text provided'}), 400
 
     try:
-        task_data = parse_task_with_ai(text, app.config['OPENAI_API_KEY'])
+        task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], app.config['SYSTEM_PROMPT'])
 
         task = Task(
             title=task_data['title'],
