@@ -135,10 +135,37 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <button class="btn btn-primary btn-sm" id="addNewSpaceBtn">
+                        <button class="btn btn-primary btn-sm" id="addNewSpaceBtn" onclick="showAddSpaceForm()">
                             <i class="fas fa-plus"></i> Add Space
                         </button>
                     </div>
+
+                    <!-- Add Space Form -->
+                    <div id="addSpaceForm" class="card mb-3" style="display: none;">
+                        <div class="card-body">
+                            <h6 class="mb-3">Add New Space</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Name *</label>
+                                <input type="text" class="form-control" id="newSpaceName" placeholder="e.g., work, hobby, project">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" id="newSpaceDescription" rows="2" placeholder="Describe what this space is for..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Time Constraints (optional)</label>
+                                <div id="timeConstraints"></div>
+                                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="addTimeConstraint()">
+                                    <i class="fas fa-plus"></i> Add Time Constraint
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" onclick="createSpace()">Create</button>
+                                <button class="btn btn-secondary" onclick="document.getElementById('addSpaceForm').style.display='none'">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div id="spaceList"></div>
                 </div>
             </div>
