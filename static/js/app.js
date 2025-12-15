@@ -60,9 +60,39 @@ function initCalendar() {
         eventClick: handleEventClick,
         eventDrop: handleEventDrop,
         eventResize: handleEventResize,
-        events: loadCalendarEvents
+        events: loadCalendarEvents,
+        viewDidMount: setupDayHeaderListeners,
+        datesSet: setupDayHeaderListeners
     });
     calendar.render();
+}
+
+// Setup listeners for day headers to enable Ctrl+Click to freeze days
+function setupDayHeaderListeners() {
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+        const dayHeaders = document.querySelectorAll('.fc-col-header-cell[data-date]');
+        dayHeaders.forEach(header => {
+            // Remove existing listener to avoid duplicates
+            const newHeader = header.cloneNode(true);
+            header.parentNode.replaceChild(newHeader, header);
+
+            // Add click listener
+            newHeader.addEventListener('click', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const dateStr = this.getAttribute('data-date');
+                    if (dateStr) {
+                        freezeDay(dateStr);
+                    }
+                }
+            });
+
+            // Add visual hint
+            newHeader.style.cursor = 'pointer';
+            newHeader.title = 'Ctrl+Click to freeze/unfreeze all tasks on this day';
+        });
+    }, 100);
 }
 
 // Initialize sortable for task list
@@ -105,14 +135,15 @@ function renderTasks() {
         const isSoon = deadline && (deadline - new Date()) < 24 * 60 * 60 * 1000;
 
         return `
-            <div class="task-item ${task.completed ? 'completed' : ''}" data-task-id="${task.id}">
+            <div class="task-item ${task.completed ? 'completed' : ''} ${task.frozen ? 'frozen' : ''}" data-task-id="${task.id}">
                 <div class="task-priority ${priorityClass}">${task.priority}</div>
-                <div class="task-title">${escapeHtml(task.title)}</div>
+                <div class="task-title">${task.frozen ? '❄️ ' : ''}${escapeHtml(task.title)}</div>
                 <div class="task-meta">
                     ${task.space ? `<span class="task-space"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(task.space)}</span>` : ''}
                     ${task.estimated_duration ? `<span class="task-meta-item"><i class="fas fa-clock"></i> ${task.estimated_duration}min</span>` : ''}
                     ${deadlineStr ? `<span class="task-meta-item task-deadline ${isSoon ? 'soon' : ''}"><i class="fas fa-calendar-times"></i> ${deadlineStr}</span>` : ''}
                     ${task.scheduled_start ? `<span class="task-meta-item"><i class="fas fa-calendar-check"></i> Scheduled</span>` : ''}
+                    ${task.frozen ? `<span class="task-meta-item frozen-indicator"><i class="fas fa-snowflake"></i> Frozen</span>` : ''}
                 </div>
             </div>
         `;
@@ -204,10 +235,10 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
         .filter(task => task.scheduled_start && task.scheduled_end && !task.completed)
         .map(task => ({
             id: `task-${task.id}`,
-            title: task.title,
+            title: task.frozen ? `❄️ ${task.title}` : task.title,
             start: task.scheduled_start,
             end: task.scheduled_end,
-            className: 'task-event',
+            className: task.frozen ? 'task-event frozen-task' : 'task-event',
             extendedProps: {
                 type: 'task',
                 taskId: task.id,
@@ -237,7 +268,14 @@ function handleEventClick(info) {
     const event = info.event;
 
     if (event.extendedProps.type === 'task') {
-        editTask(event.extendedProps.taskId);
+        // Check if Ctrl key is pressed
+        if (info.jsEvent.ctrlKey || info.jsEvent.metaKey) {
+            // Prevent default action and toggle freeze
+            info.jsEvent.preventDefault();
+            toggleTaskFreeze(event.extendedProps.taskId);
+        } else {
+            editTask(event.extendedProps.taskId);
+        }
     }
 }
 
@@ -377,6 +415,54 @@ async function deleteTask() {
     await loadTasks();
     calendar.refetchEvents();
     showAlert('Task deleted successfully!', 'success');
+}
+
+// Toggle task freeze status
+async function toggleTaskFreeze(taskId) {
+    const response = await fetch(`/api/tasks/${taskId}/toggle-freeze`, {
+        method: 'POST'
+    });
+
+    if (response.ok) {
+        const result = await response.json();
+        await loadTasks();
+        calendar.refetchEvents();
+        showAlert(
+            result.frozen ? '❄️ Task frozen - will not be rescheduled' : '✓ Task unfrozen',
+            result.frozen ? 'info' : 'success'
+        );
+    } else {
+        showAlert('Error toggling freeze status', 'danger');
+    }
+}
+
+// Freeze all tasks on a specific day
+async function freezeDay(dateStr) {
+    const response = await fetch('/api/tasks/freeze-day', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ date: dateStr })
+    });
+
+    if (response.ok) {
+        const result = await response.json();
+        if (result.count > 0) {
+            await loadTasks();
+            calendar.refetchEvents();
+            showAlert(
+                result.frozen
+                    ? `❄️ Frozen ${result.count} task(s) on this day`
+                    : `✓ Unfrozen ${result.count} task(s) on this day`,
+                result.frozen ? 'info' : 'success'
+            );
+        } else {
+            showAlert('No tasks found on this day', 'warning');
+        }
+    } else {
+        showAlert('Error freezing day', 'danger');
+    }
 }
 
 // Load spaces

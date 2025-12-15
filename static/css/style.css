@@ -284,3 +284,23 @@ body {
 .calendar-panel::-webkit-scrollbar-thumb:hover {
     background: #a0aec0;
 }
+
+/* Frozen Tasks */
+.task-item.frozen {
+    border: 2px solid #63b3ed;
+    background: linear-gradient(to right, #ebf8ff 0%, white 10%);
+}
+
+.frozen-indicator {
+    color: #3182ce;
+    font-weight: 600;
+}
+
+.fc-event.frozen-task {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    border-left: 4px solid #2c5282;
+}
+
+.fc-event.frozen-task:hover {
+    opacity: 0.9;
+}

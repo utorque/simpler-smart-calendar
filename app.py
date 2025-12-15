@@ -160,6 +160,8 @@ def update_task(task_id):
         task.scheduled_end = datetime.fromisoformat(data['scheduled_end']) if data['scheduled_end'] else None
     if 'completed' in data:
         task.completed = data['completed']
+    if 'frozen' in data:
+        task.frozen = data['frozen']
 
     db.session.commit()
 
@@ -197,6 +199,77 @@ def delete_task(task_id):
     db.session.commit()
 
     return jsonify({'success': True})
+
+
+@app.route('/api/tasks/<int:task_id>/toggle-freeze', methods=['POST'])
+@login_required
+def toggle_task_freeze(task_id):
+    task = Task.query.get_or_404(task_id)
+    old_value = task.to_dict()
+
+    task.frozen = not task.frozen
+    db.session.commit()
+
+    # Log the freeze/unfreeze
+    log = ChangeLog(
+        action='freeze' if task.frozen else 'unfreeze',
+        entity_type='task',
+        entity_id=task.id,
+        old_value=json.dumps(old_value),
+        new_value=json.dumps(task.to_dict())
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify({'success': True, 'frozen': task.frozen})
+
+
+@app.route('/api/tasks/freeze-day', methods=['POST'])
+@login_required
+def freeze_day():
+    data = request.json
+    date_str = data.get('date')
+
+    if not date_str:
+        return jsonify({'error': 'No date provided'}), 400
+
+    # Parse the date (format: YYYY-MM-DD)
+    target_date = datetime.fromisoformat(date_str).date()
+
+    # Find all tasks scheduled on this day
+    tasks_on_day = Task.query.filter(
+        db.func.date(Task.scheduled_start) == target_date
+    ).all()
+
+    if not tasks_on_day:
+        return jsonify({'success': True, 'count': 0, 'message': 'No tasks found on this day'})
+
+    # Toggle freeze status for all tasks on this day
+    # If all are frozen, unfreeze them; otherwise freeze all
+    all_frozen = all(task.frozen for task in tasks_on_day)
+    new_frozen_state = not all_frozen
+
+    for task in tasks_on_day:
+        old_value = task.to_dict()
+        task.frozen = new_frozen_state
+
+        # Log the change
+        log = ChangeLog(
+            action='freeze' if new_frozen_state else 'unfreeze',
+            entity_type='task',
+            entity_id=task.id,
+            old_value=json.dumps(old_value),
+            new_value=json.dumps(task.to_dict())
+        )
+        db.session.add(log)
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'count': len(tasks_on_day),
+        'frozen': new_frozen_state
+    })
 
 
 @app.route('/api/tasks/reorder', methods=['POST'])

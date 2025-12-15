@@ -15,9 +15,13 @@ def schedule_tasks(tasks, external_events, space_constraints):
     """
     scheduled_tasks = []
 
-    # Sort tasks by priority (descending) and deadline (ascending)
+    # Separate frozen and non-frozen tasks
+    frozen_tasks = [t for t in tasks if t.frozen and t.scheduled_start and t.scheduled_end]
+    non_frozen_tasks = [t for t in tasks if not t.frozen]
+
+    # Sort non-frozen tasks by priority (descending) and deadline (ascending)
     sorted_tasks = sorted(
-        tasks,
+        non_frozen_tasks,
         key=lambda t: (
             -t.priority,
             t.deadline if t.deadline else datetime.max,
@@ -40,6 +44,13 @@ def schedule_tasks(tasks, external_events, space_constraints):
         busy_slots.append({
             'start': event['start'],
             'end': event['end']
+        })
+
+    # Add frozen tasks to busy slots so new tasks don't get scheduled over them
+    for frozen_task in frozen_tasks:
+        busy_slots.append({
+            'start': frozen_task.scheduled_start,
+            'end': frozen_task.scheduled_end
         })
 
     for task in sorted_tasks:

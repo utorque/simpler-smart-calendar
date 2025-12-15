@@ -17,6 +17,7 @@ class Task(db.Model):
     scheduled_start = db.Column(db.DateTime)
     scheduled_end = db.Column(db.DateTime)
     completed = db.Column(db.Boolean, default=False)
+    frozen = db.Column(db.Boolean, default=False)  # Prevents rescheduling when True
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -32,6 +33,7 @@ class Task(db.Model):
             'scheduled_start': self.scheduled_start.isoformat() if self.scheduled_start else None,
             'scheduled_end': self.scheduled_end.isoformat() if self.scheduled_end else None,
             'completed': self.completed,
+            'frozen': self.frozen,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }
