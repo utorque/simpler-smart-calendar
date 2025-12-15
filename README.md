@@ -7,7 +7,7 @@ A simple, fast, and intuitive web application designed specifically for people w
 ### Core Functionality
 - **AI-Powered Task Creation**: Simply paste text (emails, notes, etc.) and let AI extract task details
 - **Smart Scheduling**: Automatically schedules tasks based on priority, deadlines, and availability
-- **Task Freezing**: Ctrl+Click to freeze tasks or entire days to prevent rescheduling
+- **Task Freezing**: ctrl+click to freeze tasks or entire days to prevent rescheduling
 - **Visual Task Management**: Drag-and-drop task reordering and calendar scheduling
 - **External Calendar Integration**: Import events from Google Calendar, Outlook, and other ICS-compatible calendars
 - **Space-Based Scheduling**: Define time constraints for different contexts (work, study, personal projects, etc.)
