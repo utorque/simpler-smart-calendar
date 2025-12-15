@@ -99,7 +99,15 @@ def parse_task():
     if not text:
         return jsonify({'error': 'No text provided'}), 400
 
-    task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], app.config['SYSTEM_PROMPT'])
+    ### Append list of spaces to the system prompt
+
+    spaces = Space.query.all()
+    space_names = [space.name for space in spaces]
+    spaces_descs = "\n".join([f"- {space.name}: {space.description}" for space in spaces])
+
+    system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_descs
+
+    task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], system_prompt)
 
     task = Task(
         title=task_data['title'],
