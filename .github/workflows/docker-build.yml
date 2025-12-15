@@ -1,0 +1,44 @@
+name: Docker Build and Push
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Docker image
+      run: docker build -t smart-task-calendar:latest .
+
+    - name: Test Docker image
+      run: |
+        docker run -d --name test-app -p 5000:5000 \
+          -e APP_PASSWORD=test \
+          -e SECRET_KEY=test-secret \
+          smart-task-calendar:latest
+        sleep 10
+        curl -f http://localhost:5000/login || exit 1
+        docker stop test-app
+        docker rm test-app
+
+    # Uncomment to push to Docker Hub
+    # - name: Login to Docker Hub
+    #   uses: docker/login-action@v2
+    #   with:
+    #     username: ${{ secrets.DOCKER_USERNAME }}
+    #     password: ${{ secrets.DOCKER_PASSWORD }}
+    #
+    # - name: Push to Docker Hub
+    #   run: |
+    #     docker tag smart-task-calendar:latest ${{ secrets.DOCKER_USERNAME }}/smart-task-calendar:latest
+    #     docker push ${{ secrets.DOCKER_USERNAME }}/smart-task-calendar:latest
