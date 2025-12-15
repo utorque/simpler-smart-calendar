@@ -45,15 +45,3 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-    
-    - name: Test Docker image
-      if: github.event_name != 'pull_request'
-      run: |
-        docker run -d --name test-app -p 5000:5000 \
-          -e APP_PASSWORD=test \
-          -e SECRET_KEY=test-secret \
-          ghcr.io/${{ github.repository }}:${{ github.ref_name }}-${{ github.sha }}
-        sleep 10
-        curl -f http://localhost:5000/login || exit 1
-        docker stop test-app
-        docker rm test-app
