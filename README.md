@@ -268,7 +268,7 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## License
 
-MIT License
+[LICENSE](./LICENSE)
 
 ## Support
 
