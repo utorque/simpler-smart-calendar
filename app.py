@@ -355,6 +355,12 @@ def get_external_events():
 
     for source in sources:
         events = fetch_external_events(source.ics_url)
+        # Convert datetime objects to ISO format strings for JSON serialization
+        for event in events:
+            if isinstance(event.get('start'), datetime):
+                event['start'] = event['start'].isoformat()
+            if isinstance(event.get('end'), datetime):
+                event['end'] = event['end'].isoformat()
         all_events.extend(events)
 
     return jsonify(all_events)
