@@ -1,3 +1,4 @@
+- [] add space id and not name directly to change name lol
 - [] task button add context and re-plan
 - [] button to automatically do docker-compose pull and docker-compose up -d from the web app (supersecure lol)
 - [] add the current date and time to the planner so it does not plan things for too early
