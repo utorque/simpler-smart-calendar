@@ -7,6 +7,7 @@ A simple, fast, and intuitive web application designed specifically for people w
 ### Core Functionality
 - **AI-Powered Task Creation**: Simply paste text (emails, notes, etc.) and let AI extract task details
 - **Smart Scheduling**: Automatically schedules tasks based on priority, deadlines, and availability
+- **Task Freezing**: Ctrl+Click to freeze tasks or entire days to prevent rescheduling
 - **Visual Task Management**: Drag-and-drop task reordering and calendar scheduling
 - **External Calendar Integration**: Import events from Google Calendar, Outlook, and other ICS-compatible calendars
 - **Space-Based Scheduling**: Define time constraints for different contexts (work, study, personal projects, etc.)
@@ -125,7 +126,11 @@ python app.py
 
 - **Drag Events**: Move scheduled tasks to different times
 - **Resize Events**: Adjust duration by dragging event edges
+- **Freeze Tasks**: Ctrl+Click on a task to freeze/unfreeze it (frozen tasks won't be moved by auto-schedule)
+- **Freeze Days**: Ctrl+Click on a day header (e.g., "Wed 12/17") to freeze/unfreeze all tasks on that day
 - **External Calendars**: Add Google/Outlook calendars via ICS URLs
+
+**Note**: Frozen tasks appear with a ❄️ snowflake icon and blue styling in both the task list and calendar.
 
 ### Space Management
 
@@ -166,6 +171,26 @@ You can modify or add more spaces through the UI.
 
 ### Migrating from Previous Versions
 
+#### Task Freezing Feature (Latest Update)
+
+If you're upgrading to the version with task freezing support, run the migration script:
+
+```bash
+python migration.py
+```
+
+This will:
+- Add the `frozen` column to your tasks table
+- Set all existing tasks to unfrozen (frozen=False)
+- Create a backup of your database before migration
+
+After migration, you can:
+- **Ctrl+Click** on any task in the calendar to freeze/unfreeze it
+- **Ctrl+Click** on a day header to freeze/unfreeze all tasks on that day
+- Frozen tasks won't move when you run auto-schedule
+
+#### Locations to Spaces Migration
+
 If you're upgrading from a version that used "Locations" instead of "Spaces", run the migration script before starting the updated application:
 
 ```bash
@@ -195,6 +220,8 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 - `PUT /api/tasks/<id>` - Update a task
 - `DELETE /api/tasks/<id>` - Delete a task
 - `POST /api/tasks/reorder` - Reorder tasks
+- `POST /api/tasks/<id>/toggle-freeze` - Toggle freeze status for a task
+- `POST /api/tasks/freeze-day` - Freeze/unfreeze all tasks on a specific day
 
 ### Scheduling
 - `POST /api/schedule` - Auto-schedule all tasks
