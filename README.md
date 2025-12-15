@@ -9,7 +9,7 @@ A simple, fast, and intuitive web application designed specifically for people w
 - **Smart Scheduling**: Automatically schedules tasks based on priority, deadlines, and availability
 - **Visual Task Management**: Drag-and-drop task reordering and calendar scheduling
 - **External Calendar Integration**: Import events from Google Calendar, Outlook, and other ICS-compatible calendars
-- **Location-Based Scheduling**: Define time constraints for different contexts (work, study, association, etc.)
+- **Space-Based Scheduling**: Define time constraints for different contexts (work, study, personal projects, etc.)
 - **Change Logging**: Track all modifications for future learning and preferences
 
 ### User Interface
@@ -100,7 +100,7 @@ python app.py
 2. **AI Parsing**: Click "Create Task with AI" to automatically extract:
    - Task title
    - Description
-   - Location/context
+   - Space/context
    - Priority (0-10)
    - Deadline
    - Estimated duration
@@ -118,7 +118,7 @@ python app.py
 2. The algorithm considers:
    - Task priority (higher priority scheduled first)
    - Deadlines (urgent tasks scheduled sooner)
-   - Location time constraints
+   - Space time constraints
    - Existing calendar events
 
 ### Calendar Management
@@ -127,12 +127,13 @@ python app.py
 - **Resize Events**: Adjust duration by dragging event edges
 - **External Calendars**: Add Google/Outlook calendars via ICS URLs
 
-### Location Management
+### Space Management
 
-1. Click "Manage Locations" to view/edit contexts
-2. Define time constraints for each location:
+1. Click "Manage Spaces" to view/edit contexts
+2. Define time constraints for each space:
    - Example: "work" only on weekdays 9-5
    - Example: "association" only Wednesday evenings
+3. Add descriptions to spaces to help AI understand context
 
 ### Adding External Calendars
 
@@ -151,14 +152,31 @@ python app.py
 - `SECRET_KEY`: Secret key for Flask sessions (generate a random string)
 - `FLASK_ENV`: Set to `production` for production deployment
 
-### Default Locations
+### Default Spaces
 
-The app comes with three default locations:
+The app comes with three default spaces:
 - **work**: Monday-Friday, 9:00-17:00
+  - Description: Work-related tasks, meetings, and projects during office hours
 - **study**: No time constraints
+  - Description: Learning activities, courses, homework, and educational tasks
 - **association**: Wednesday, 18:00-22:00
+  - Description: Community group, club, or volunteer organization activities
 
-You can modify or add more locations through the UI.
+You can modify or add more spaces through the UI.
+
+### Migrating from Previous Versions
+
+If you're upgrading from a version that used "Locations" instead of "Spaces", run the migration script before starting the updated application:
+
+```bash
+python migrate_locations_to_spaces.py
+```
+
+This will:
+- Rename the `locations` table to `spaces`
+- Rename the `location` column in tasks to `space`
+- Add the `description` column to spaces
+- Create a backup of your database before migration
 
 ### AI Task Parsing
 
@@ -166,7 +184,7 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 
 1. Edit `prompt.md` to adjust how tasks are parsed
 2. Restart the application to load the updated prompt
-3. The prompt includes guidelines for extracting titles, locations, priorities, deadlines, and durations
+3. The prompt includes guidelines for extracting titles, spaces, priorities, deadlines, and durations
 
 ## API Endpoints
 
@@ -181,11 +199,11 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 ### Scheduling
 - `POST /api/schedule` - Auto-schedule all tasks
 
-### Locations
-- `GET /api/locations` - Get all locations
-- `POST /api/locations` - Create a location
-- `PUT /api/locations/<id>` - Update a location
-- `DELETE /api/locations/<id>` - Delete a location
+### Spaces
+- `GET /api/spaces` - Get all spaces
+- `POST /api/spaces` - Create a space
+- `PUT /api/spaces/<id>` - Update a space
+- `DELETE /api/spaces/<id>` - Delete a space
 
 ### Calendar Sources
 - `GET /api/calendar-sources` - Get all calendar sources
@@ -200,7 +218,7 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 
 ### Backend
 - **Flask**: Web framework
-- **SQLite**: Database for tasks, locations, and logs
+- **SQLite**: Database for tasks, spaces, and logs
 - **Anthropic Claude**: AI-powered task parsing (using Claude 3.5 Haiku)
 - **icalendar**: ICS calendar parsing
 
@@ -212,8 +230,8 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 
 ### Database Schema
 
-- **tasks**: Store task information, priorities, deadlines, and schedules
-- **locations**: Define contexts and their time constraints
+- **tasks**: Store task information, priorities, deadlines, schedules, and associated space
+- **spaces**: Define contexts (work, study, etc.) with descriptions and time constraints
 - **change_logs**: Track all user modifications
 - **calendar_sources**: Store external calendar ICS URLs
 

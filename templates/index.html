@@ -38,8 +38,8 @@
                     <button class="btn btn-success btn-sm" id="scheduleBtn">
                         <i class="fas fa-calendar-check"></i> Auto-Schedule All
                     </button>
-                    <button class="btn btn-info btn-sm" id="addLocationBtn">
-                        <i class="fas fa-map-marker-alt"></i> Manage Locations
+                    <button class="btn btn-info btn-sm" id="addSpaceBtn">
+                        <i class="fas fa-map-marker-alt"></i> Manage Spaces
                     </button>
                     <button class="btn btn-secondary btn-sm" id="addCalendarBtn">
                         <i class="fas fa-link"></i> Add Calendar
@@ -92,8 +92,8 @@
                         <textarea class="form-control" id="editDescription" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Location</label>
-                        <select class="form-select" id="editLocation">
+                        <label class="form-label">Space</label>
+                        <select class="form-select" id="editSpace">
                             <option value="">None</option>
                         </select>
                     </div>
@@ -125,21 +125,21 @@
         </div>
     </div>
 
-    <!-- Location Modal -->
-    <div class="modal fade" id="locationModal" tabindex="-1">
+    <!-- Space Modal -->
+    <div class="modal fade" id="spaceModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Manage Locations</h5>
+                    <h5 class="modal-title">Manage Spaces</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <button class="btn btn-primary btn-sm" id="addNewLocationBtn">
-                            <i class="fas fa-plus"></i> Add Location
+                        <button class="btn btn-primary btn-sm" id="addNewSpaceBtn">
+                            <i class="fas fa-plus"></i> Add Space
                         </button>
                     </div>
-                    <div id="locationList"></div>
+                    <div id="spaceList"></div>
                 </div>
             </div>
         </div>

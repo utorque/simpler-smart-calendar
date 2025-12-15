@@ -1,9 +1,9 @@
 // Global state
 let tasks = [];
-let locations = [];
+let spaces = [];
 let calendar;
 let taskModal;
-let locationModal;
+let spaceModal;
 let calendarModal;
 let sortable;
 
@@ -11,7 +11,7 @@ let sortable;
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize modals
     taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
-    locationModal = new bootstrap.Modal(document.getElementById('locationModal'));
+    spaceModal = new bootstrap.Modal(document.getElementById('spaceModal'));
     calendarModal = new bootstrap.Modal(document.getElementById('calendarModal'));
 
     // Initialize calendar
@@ -22,13 +22,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load initial data
     loadTasks();
-    loadLocations();
+    loadSpaces();
 
     // Event listeners
     document.getElementById('parseTaskBtn').addEventListener('click', parseTask);
     document.getElementById('scheduleBtn').addEventListener('click', autoSchedule);
     document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('addLocationBtn').addEventListener('click', showLocationModal);
+    document.getElementById('addSpaceBtn').addEventListener('click', showSpaceModal);
     document.getElementById('addCalendarBtn').addEventListener('click', showCalendarModal);
     document.getElementById('saveTaskBtn').addEventListener('click', saveTask);
     document.getElementById('deleteTaskBtn').addEventListener('click', deleteTask);
@@ -109,7 +109,7 @@ function renderTasks() {
                 <div class="task-priority ${priorityClass}">${task.priority}</div>
                 <div class="task-title">${escapeHtml(task.title)}</div>
                 <div class="task-meta">
-                    ${task.location ? `<span class="task-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(task.location)}</span>` : ''}
+                    ${task.space ? `<span class="task-space"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(task.space)}</span>` : ''}
                     ${task.estimated_duration ? `<span class="task-meta-item"><i class="fas fa-clock"></i> ${task.estimated_duration}min</span>` : ''}
                     ${deadlineStr ? `<span class="task-meta-item task-deadline ${isSoon ? 'soon' : ''}"><i class="fas fa-calendar-times"></i> ${deadlineStr}</span>` : ''}
                     ${task.scheduled_start ? `<span class="task-meta-item"><i class="fas fa-calendar-check"></i> Scheduled</span>` : ''}
@@ -320,7 +320,7 @@ function editTask(taskId) {
     document.getElementById('editTaskId').value = task.id;
     document.getElementById('editTitle').value = task.title;
     document.getElementById('editDescription').value = task.description || '';
-    document.getElementById('editLocation').value = task.location || '';
+    document.getElementById('editSpace').value = task.space || '';
     document.getElementById('editPriority').value = task.priority;
     document.getElementById('editDuration').value = task.estimated_duration || 60;
     document.getElementById('editCompleted').checked = task.completed;
@@ -341,7 +341,7 @@ async function saveTask() {
     const data = {
         title: document.getElementById('editTitle').value,
         description: document.getElementById('editDescription').value,
-        location: document.getElementById('editLocation').value,
+        space: document.getElementById('editSpace').value,
         priority: parseInt(document.getElementById('editPriority').value),
         estimated_duration: parseInt(document.getElementById('editDuration').value),
         completed: document.getElementById('editCompleted').checked,
@@ -379,37 +379,38 @@ async function deleteTask() {
     showAlert('Task deleted successfully!', 'success');
 }
 
-// Load locations
-async function loadLocations() {
-    const response = await fetch('/api/locations');
-    locations = await response.json();
-    updateLocationSelects();
+// Load spaces
+async function loadSpaces() {
+    const response = await fetch('/api/spaces');
+    spaces = await response.json();
+    updateSpaceSelects();
 }
 
-// Update location selects
-function updateLocationSelects() {
-    const select = document.getElementById('editLocation');
+// Update space selects
+function updateSpaceSelects() {
+    const select = document.getElementById('editSpace');
     select.innerHTML = '<option value="">None</option>' +
-        locations.map(loc => `<option value="${escapeHtml(loc.name)}">${escapeHtml(loc.name)}</option>`).join('');
+        spaces.map(space => `<option value="${escapeHtml(space.name)}">${escapeHtml(space.name)}</option>`).join('');
 }
 
-// Show location modal
-async function showLocationModal() {
-    await loadLocations();
-    renderLocations();
-    locationModal.show();
+// Show space modal
+async function showSpaceModal() {
+    await loadSpaces();
+    renderSpaces();
+    spaceModal.show();
 }
 
-// Render locations
-function renderLocations() {
-    const list = document.getElementById('locationList');
-    list.innerHTML = locations.map(loc => `
+// Render spaces
+function renderSpaces() {
+    const list = document.getElementById('spaceList');
+    list.innerHTML = spaces.map(space => `
         <div class="card mb-3">
             <div class="card-body">
-                <h6>${escapeHtml(loc.name)}</h6>
+                <h6>${escapeHtml(space.name)}</h6>
+                ${space.description ? `<p class="text-muted small mb-2">${escapeHtml(space.description)}</p>` : ''}
                 <div class="text-muted small">
-                    ${loc.time_constraints.length > 0 ?
-                        loc.time_constraints.map(c =>
+                    ${space.time_constraints.length > 0 ?
+                        space.time_constraints.map(c =>
                             `${getDayName(c.day)}: ${c.start} - ${c.end}`
                         ).join('<br>') :
                         'No time constraints'
