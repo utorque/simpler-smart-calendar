@@ -7,4 +7,8 @@
 - [] lock/freeze tasks on modification in the calendar (ctrl click or sth)
 - [] list available models and choose accordingly  
 - [] add learn user habits   
-- [] optimize system prompt  
+- [] optimize system prompt
+- [] redo the UI to be nicer, softer to the eye while prioritizing UX
+- [] way to see tasks finished
+- [] direct filter on task list to see only X or Y places
+- [] button to reschedule only for current filter
