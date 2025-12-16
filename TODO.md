@@ -5,10 +5,12 @@
 - [ ] add a done button or sth
 - [ ] get all tasks for context or something ?  
 - [ ] lock/freeze tasks on modification in the calendar (ctrl click or sth)
-- [ ] list available models and choose accordingly  
+- [ ] list available models and choose accordingly
+- [ ] Make AI return list of tasks instead of just one necessarily
 - [ ] add learn user habits   
 - [ ] optimize system prompt
 - [ ] redo the UI to be nicer, softer to the eye while prioritizing UX
 - [ ] way to see tasks finished
 - [ ] direct filter on task list to see only X or Y places
 - [ ] button to reschedule only for current filter
+- [ ] Potentially going all in in project management ?
