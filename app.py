@@ -12,15 +12,20 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
-# Helper function to parse ISO datetime strings with 'Z' suffix
+# Helper function to parse ISO datetime strings
 def parse_iso_datetime(iso_string):
-    """Parse ISO datetime string, handling 'Z' suffix for UTC timezone."""
+    """Parse ISO datetime string in local timezone format."""
     if not iso_string:
         return None
-    # Replace 'Z' with '+00:00' for proper ISO format parsing
+    # Handle both formats: '2025-12-16T12:00:00' (local) and '2025-12-16T12:00:00.000Z' (UTC)
+    # We now send local timezone from frontend, but keep Z support for backward compatibility
     if iso_string.endswith('Z'):
+        # Legacy UTC format - parse and strip timezone (no conversion needed, stored as naive)
         iso_string = iso_string[:-1] + '+00:00'
-    return datetime.fromisoformat(iso_string).replace(tzinfo=None)
+        return datetime.fromisoformat(iso_string).replace(tzinfo=None)
+    else:
+        # Local timezone format (current) - parse directly as naive datetime
+        return datetime.fromisoformat(iso_string)
 
 # Authentication decorator
 def login_required(f):

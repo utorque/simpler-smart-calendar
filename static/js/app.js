@@ -319,8 +319,8 @@ async function handleEventDrop(info) {
 
     if (event.extendedProps.type === 'task') {
         const taskId = event.extendedProps.taskId;
-        const newStart = event.start.toISOString();
-        const newEnd = event.end.toISOString();
+        const newStart = formatDateTimeLocal(event.start);
+        const newEnd = formatDateTimeLocal(event.end);
 
         // Auto-freeze task when manually moved (unless Ctrl is pressed to skip freeze)
         const skipFreeze = info.jsEvent.ctrlKey || info.jsEvent.metaKey;
@@ -339,8 +339,8 @@ async function handleEventResize(info) {
 
     if (event.extendedProps.type === 'task') {
         const taskId = event.extendedProps.taskId;
-        const newStart = event.start.toISOString();
-        const newEnd = event.end.toISOString();
+        const newStart = formatDateTimeLocal(event.start);
+        const newEnd = formatDateTimeLocal(event.end);
 
         // Calculate new duration (rounded to 15-minute increments)
         const duration = Math.round((event.end - event.start) / 60000 / 15) * 15; // in minutes
@@ -441,7 +441,7 @@ async function saveTask() {
         estimated_duration: parseInt(document.getElementById('editDuration').value),
         completed: document.getElementById('editCompleted').checked,
         deadline: document.getElementById('editDeadline').value ?
-                 new Date(document.getElementById('editDeadline').value).toISOString() : null
+                 document.getElementById('editDeadline').value + ':00' : null
     };
 
     await fetch(`/api/tasks/${taskId}`, {
@@ -950,4 +950,16 @@ function formatDateTimeLocal(date) {
 function getDayName(dayIndex) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[dayIndex];
+}
+
+// Format date to ISO string in local timezone (not UTC)
+function formatDateTimeLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 }
