@@ -4,12 +4,14 @@
 - [ ] ctrl click to mark task done
 - [ ] lock/freeze tasks on modification in the calendar (ctrl click or sth)
 - [ ] add the current date and time to the planner so it does not plan things for too early
+- [ ] Drag task edge on calendar to change time
 - [ ] way to see tasks finished
 
 ## GOOD FEATURES
 - [ ] direct filter on task list to see only X or Y places
 - [ ] button to reschedule only for current filter
-
+- [ ] global user config (breaks, breaks after tasks,...)
+      
 ## PLANNED
 - [ ] redo the UI to be nicer, softer to the eye while prioritizing UX
 
