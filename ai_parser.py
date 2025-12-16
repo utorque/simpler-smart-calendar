@@ -36,7 +36,7 @@ def parse_task_with_ai(text, api_key, system_prompt):
     user_message = f"Current date and time: {now.strftime('%Y-%m-%d %H:%M')}.\n\nTask to parse:\n{text}"
 
     response = client.messages.create(
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5",
         max_tokens=1024,
         temperature=0.3,
         system=system_prompt,

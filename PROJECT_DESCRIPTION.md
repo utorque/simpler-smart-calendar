@@ -15,7 +15,7 @@
 ### Backend
 - **Framework**: Flask 3.0.0+ (Python web framework)
 - **Database**: SQLite with SQLAlchemy ORM
-- **AI/ML**: Anthropic Claude 3.5 Haiku (via Anthropic Python SDK 0.75.0+)
+- **AI/ML**: Anthropic Claude 4.5 Haiku (via Anthropic Python SDK 0.75.0+)
 - **Authentication**: Flask-Login 0.6.3+ with session-based auth
 - **Calendar Integration**: icalendar 5.0.11+ for ICS parsing
 - **HTTP Client**: requests 2.31.0+ for external calendar fetching
@@ -211,7 +211,7 @@ Parse natural language text and create task with AI.
 **Response**: Task object (201 Created)
 
 **AI Processing**:
-- Uses Claude 3.5 Haiku model
+- Uses Claude 4.5 Haiku model
 - System prompt loaded from `prompt.md`
 - Extracts: title, description, space, priority, deadline, duration
 - Available spaces appended to prompt for context
@@ -404,7 +404,7 @@ Get change logs for audit/learning.
 1. User submits raw text via `/api/tasks/parse`
 2. System appends current date and time to prompt
 3. Fetches all spaces with IDs, names, and descriptions
-4. Calls Claude 3.5 Haiku with system prompt from `prompt.md`
+4. Calls Claude 4.5 Haiku with system prompt from `prompt.md`
 5. AI returns JSON with task fields (single object or array)
 6. Handles relative dates ("tomorrow", "next week", etc.)
 7. Creates task(s) in database with space_id reference
@@ -795,7 +795,7 @@ def slots_overlap(start1, end1, start2, end2):
 - ✅ Multi-task AI parsing support
 - ✅ Time-based priority adjustment in AI
 - ✅ External calendar integration (ICS)
-- ✅ AI task parsing (Claude 3.5 Haiku)
+- ✅ AI task parsing (Claude 4.5 Haiku)
 - ✅ Auto-scheduling algorithm
 - ✅ Change logging
 - ✅ Docker deployment
