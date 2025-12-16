@@ -304,3 +304,20 @@ body {
 .fc-event.frozen-task:hover {
     opacity: 0.9;
 }
+
+/* Completed Tasks */
+.fc-event.completed-task {
+    opacity: 0.5;
+    text-decoration: line-through;
+    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+}
+
+/* Toggle Completed Button */
+#toggleCompletedBtn {
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
+#toggleCompletedBtn:hover {
+    background-color: #e2e8f0;
+}

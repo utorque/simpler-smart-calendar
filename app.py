@@ -12,6 +12,21 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
 
+# Helper function to parse ISO datetime strings
+def parse_iso_datetime(iso_string):
+    """Parse ISO datetime string in local timezone format."""
+    if not iso_string:
+        return None
+    # Handle both formats: '2025-12-16T12:00:00' (local) and '2025-12-16T12:00:00.000Z' (UTC)
+    # We now send local timezone from frontend, but keep Z support for backward compatibility
+    if iso_string.endswith('Z'):
+        # Legacy UTC format - parse and strip timezone (no conversion needed, stored as naive)
+        iso_string = iso_string[:-1] + '+00:00'
+        return datetime.fromisoformat(iso_string).replace(tzinfo=None)
+    else:
+        # Local timezone format (current) - parse directly as naive datetime
+        return datetime.fromisoformat(iso_string)
+
 # Authentication decorator
 def login_required(f):
     def decorated_function(*args, **kwargs):
@@ -81,7 +96,7 @@ def create_task():
         space=space_name,  # Keep for backward compatibility
         space_id=space_id,
         priority=data.get('priority', 0),
-        deadline=datetime.fromisoformat(data['deadline']) if data.get('deadline') else None,
+        deadline=parse_iso_datetime(data.get('deadline')),
         estimated_duration=data.get('estimated_duration', 60)
     )
 
@@ -129,7 +144,7 @@ def parse_task():
             description=task_data.get('description'),
             space_id=task_data.get('space_id'),
             priority=task_data.get('priority', 0),
-            deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
+            deadline=parse_iso_datetime(task_data.get('deadline')),
             estimated_duration=task_data.get('estimated_duration', 60)
         )
 
@@ -176,13 +191,13 @@ def update_task(task_id):
     if 'priority' in data:
         task.priority = data['priority']
     if 'deadline' in data:
-        task.deadline = datetime.fromisoformat(data['deadline']) if data['deadline'] else None
+        task.deadline = parse_iso_datetime(data.get('deadline'))
     if 'estimated_duration' in data:
         task.estimated_duration = data['estimated_duration']
     if 'scheduled_start' in data:
-        task.scheduled_start = datetime.fromisoformat(data['scheduled_start']) if data['scheduled_start'] else None
+        task.scheduled_start = parse_iso_datetime(data.get('scheduled_start'))
     if 'scheduled_end' in data:
-        task.scheduled_end = datetime.fromisoformat(data['scheduled_end']) if data['scheduled_end'] else None
+        task.scheduled_end = parse_iso_datetime(data.get('scheduled_end'))
     if 'completed' in data:
         task.completed = data['completed']
     if 'frozen' in data:
@@ -259,7 +274,10 @@ def freeze_day():
         return jsonify({'error': 'No date provided'}), 400
 
     # Parse the date (format: YYYY-MM-DD)
-    target_date = datetime.fromisoformat(date_str).date()
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid date format. Expected YYYY-MM-DD'}), 400
 
     # Find all tasks scheduled on this day
     tasks_on_day = Task.query.filter(
