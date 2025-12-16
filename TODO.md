@@ -5,6 +5,7 @@
 - [ ] global user config (breaks, breaks after tasks,...)
 - [ ] fully redo the UI to be nicer, more responsive, softer to the eye while prioritizing UX- Potentially change the stack ?
 - [ ] redo ai api to be generic / use mistral or cheaper & less energy intensive models ; infomaniak api looks cheap (mistral 24b instruct)
+- [ ] add green hosting -> <img src="https://app.greenweb.org/api/v3/greencheckimage/simpler.utorque.ch?nocache=true" alt="This website runs on green hosting - verified by thegreenwebfoundation.org" width="200px" height="95px">
 
 ## GOOD FEATURES
 - [ ] direct filter on task list to see only X or Y places
