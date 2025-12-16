@@ -2,7 +2,7 @@
 
 ## NEXT TODO
 - [ ] POTENTIALLY FIXED ? add the current date and time to the planner so it does not plan things for too early
-- [ ] global user config (breaks, breaks after tasks,...)
+- [ ] global user config (breaks, breaks after tasks, work times for everything)
 - [ ] fully redo the UI to be nicer, more responsive, softer to the eye while prioritizing UX- Potentially change the stack ?
 - [ ] redo ai api to be generic / use mistral or cheaper & less energy intensive models ; infomaniak api looks cheap (mistral 24b instruct)
 - [ ] add green hosting -> <img src="https://app.greenweb.org/api/v3/greencheckimage/simpler.utorque.ch?nocache=true" alt="This website runs on green hosting - verified by thegreenwebfoundation.org" width="200px" height="95px">
@@ -12,6 +12,7 @@
 - [ ] button to reschedule only for current filter
 - [ ] add audio task using infomaniak whisper api
 - [ ] add telegram bot with n8n
+- [ ] Add "Overall view" with a global dashboard and informations with task list, groups etc instead of calendar. UX research opportunity for good things ? Research tailored for ADHD ?
 
 ## PLANNED
 
