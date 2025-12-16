@@ -1,6 +1,15 @@
 from datetime import datetime, timedelta
 
 
+def round_to_next_30min(dt):
+    """Round datetime up to next 30-minute boundary, or keep if already aligned."""
+    dt = dt.replace(second=0, microsecond=0)
+    remainder = dt.minute % 30
+    if remainder == 0:
+        return dt
+    return dt + timedelta(minutes=30 - remainder)
+
+
 def schedule_tasks(tasks, external_events, space_constraints):
     """
     Schedule tasks based on priority, deadlines, and space constraints.
@@ -15,11 +24,9 @@ def schedule_tasks(tasks, external_events, space_constraints):
     """
     scheduled_tasks = []
 
-    # Separate frozen and non-frozen tasks
     frozen_tasks = [t for t in tasks if t.frozen and t.scheduled_start and t.scheduled_end]
     non_frozen_tasks = [t for t in tasks if not t.frozen]
 
-    # Sort non-frozen tasks by priority (descending) and deadline (ascending)
     sorted_tasks = sorted(
         non_frozen_tasks,
         key=lambda t: (
@@ -29,24 +36,10 @@ def schedule_tasks(tasks, external_events, space_constraints):
         )
     )
 
-    # Start scheduling from now
-    current_time = datetime.now()
+    current_time = round_to_next_30min(datetime.now())
 
-    # Round to next 30-minute interval
-    if current_time.minute < 30:
-        current_time = current_time.replace(minute=30, second=0, microsecond=0)
-    else:
-        current_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    busy_slots = [{'start': event['start'], 'end': event['end']} for event in external_events]
 
-    # Create list of busy time slots from external events
-    busy_slots = []
-    for event in external_events:
-        busy_slots.append({
-            'start': event['start'],
-            'end': event['end']
-        })
-
-    # Add frozen tasks to busy slots so new tasks don't get scheduled over them
     for frozen_task in frozen_tasks:
         busy_slots.append({
             'start': frozen_task.scheduled_start,
@@ -57,7 +50,6 @@ def schedule_tasks(tasks, external_events, space_constraints):
         duration = timedelta(minutes=task.estimated_duration or 60)
         deadline = task.deadline
 
-        # Find next available slot for this task
         slot_start = find_next_available_slot(
             current_time,
             duration,
@@ -76,13 +68,11 @@ def schedule_tasks(tasks, external_events, space_constraints):
                 'scheduled_end': slot_end
             })
 
-            # Add this task to busy slots for future scheduling
             busy_slots.append({
                 'start': slot_start,
                 'end': slot_end
             })
 
-            # Sort busy slots to maintain order
             busy_slots.sort(key=lambda x: x['start'])
 
     return scheduled_tasks
@@ -91,22 +81,10 @@ def schedule_tasks(tasks, external_events, space_constraints):
 def find_next_available_slot(start_time, duration, busy_slots, space, space_constraints, deadline=None):
     """
     Find the next available time slot that satisfies all constraints.
-
-    Args:
-        start_time: datetime to start searching from
-        duration: timedelta of task duration
-        busy_slots: List of busy time slots
-        space: Task space name
-        space_constraints: Dict of space constraints
-        deadline: Optional deadline datetime
-
-    Returns:
-        datetime of slot start, or None if no suitable slot found
     """
     current = start_time
-    max_search_days = 90  # Search up to 90 days ahead
+    max_search_days = 90
 
-    # If there's a deadline, don't schedule beyond it
     if deadline:
         max_search_time = deadline - duration
     else:
@@ -115,34 +93,21 @@ def find_next_available_slot(start_time, duration, busy_slots, space, space_cons
     while current < max_search_time:
         slot_end = current + duration
 
-        # Check if this slot is within space constraints
         if not is_within_space_constraints(current, slot_end, space, space_constraints):
-            # Move to next valid time for this space
             current = get_next_valid_time_for_space(current, space, space_constraints)
             if current is None:
-                # No valid time found within space constraints
                 return None
             continue
 
-        # Check if this slot conflicts with any busy slot
         is_available = True
         for busy in busy_slots:
             if slots_overlap(current, slot_end, busy['start'], busy['end']):
                 is_available = False
-                # Move to end of this busy slot
-                current = busy['end']
-                # Round to next 30-minute interval
-                if current.minute < 30:
-                    current = current.replace(minute=30, second=0, microsecond=0)
-                else:
-                    current = current.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+                current = round_to_next_30min(busy['end'])
                 break
 
         if is_available:
             return current
-
-        # If no conflict but still didn't return, move forward
-        current += timedelta(minutes=30)
 
     return None
 
@@ -159,39 +124,29 @@ def is_within_space_constraints(start, end, space, space_constraints):
     Space constraints format:
     {
         'space_name': [
-            {'day': 1, 'start': '09:00', 'end': '17:00'},  # Monday
-            {'day': 3, 'start': '18:00', 'end': '22:00'}   # Wednesday
+            {'day': 0, 'start': '09:00', 'end': '17:00'},  # Monday
+            {'day': 2, 'start': '18:00', 'end': '22:00'}   # Wednesday
         ]
     }
 
     day: 0=Monday, 1=Tuesday, ..., 6=Sunday
     """
     if not space or space not in space_constraints:
-        # No constraints, any time is fine
         return True
 
     constraints = space_constraints[space]
 
-    if not constraints or len(constraints) == 0:
-        # No constraints for this space
+    if not constraints:
         return True
 
-    # Check if the time slot falls within any of the allowed time windows
     for constraint in constraints:
-        day_of_week = constraint['day']
-        start_time_str = constraint['start']
-        end_time_str = constraint['end']
-
-        # Check if the slot's day matches
-        if start.weekday() == day_of_week:
-            # Parse constraint times
-            start_hour, start_minute = map(int, start_time_str.split(':'))
-            end_hour, end_minute = map(int, end_time_str.split(':'))
+        if start.weekday() == constraint['day']:
+            start_hour, start_minute = map(int, constraint['start'].split(':'))
+            end_hour, end_minute = map(int, constraint['end'].split(':'))
 
             constraint_start = start.replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
             constraint_end = start.replace(hour=end_hour, minute=end_minute, second=0, microsecond=0)
 
-            # Check if the slot fits within this constraint
             if start >= constraint_start and end <= constraint_end:
                 return True
 
@@ -207,10 +162,9 @@ def get_next_valid_time_for_space(current, space, space_constraints):
 
     constraints = space_constraints[space]
 
-    if not constraints or len(constraints) == 0:
+    if not constraints:
         return current
 
-    # Try to find a valid time within the next 90 days
     for days_ahead in range(90):
         check_time = current + timedelta(days=days_ahead)
 

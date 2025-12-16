@@ -1,12 +1,11 @@
-- [ ] add space id and not name directly to change name lol
+- [x] add space id and not name directly to change name lol
 - [ ] task button add context and re-plan
 - [ ] button to automatically do docker-compose pull and docker-compose up -d from the web app (supersecure lol)
 - [ ] add the current date and time to the planner so it does not plan things for too early
 - [ ] add a done button or sth
 - [ ] get all tasks for context or something ?  
 - [ ] lock/freeze tasks on modification in the calendar (ctrl click or sth)
-- [ ] list available models and choose accordingly
-- [ ] Make AI return list of tasks instead of just one necessarily
+- [x] Make AI return list of tasks instead of just one necessarily
 - [ ] add learn user habits   
 - [ ] optimize system prompt
 - [ ] redo the UI to be nicer, softer to the eye while prioritizing UX
