@@ -4,7 +4,7 @@
 - [ ] POTENTIALLY FIXED ? add the current date and time to the planner so it does not plan things for too early
 - [ ] global user config (breaks, breaks after tasks,...)
 - [ ] fully redo the UI to be nicer, more responsive, softer to the eye while prioritizing UX- Potentially change the stack ?
-- [ ] redo ai api to be generic / use mistral or cheaper & less energy intensive models
+- [ ] redo ai api to be generic / use mistral or cheaper & less energy intensive models ; infomaniak api looks cheap (mistral 24b instruct)
 
 ## GOOD FEATURES
 - [ ] direct filter on task list to see only X or Y places
