@@ -7,24 +7,27 @@ def parse_task_with_ai(text, api_key, system_prompt):
     """
     Parse a text input using Anthropic Claude to extract task information.
 
-    Returns a dictionary with:
+    Returns a list of task dictionaries. Each dictionary contains:
     - title: Task title
     - description: Task description
-    - space: Task space (work, study, association, etc.)
+    - space_id: Space ID (numeric) or None
     - priority: Priority level (0-10)
     - deadline: ISO format datetime string or None
     - estimated_duration: Duration in minutes
+
+    Note: The AI may return multiple tasks if the input clearly describes
+    multiple distinct tasks, but will prefer returning a single task.
     """
     if not api_key:
         # Fallback to simple parsing if no API key
-        return {
+        return [{
             'title': text[:100],
             'description': text,
-            'space': 'general',
+            'space_id': None,
             'priority': 5,
             'deadline': None,
             'estimated_duration': 60
-        }
+        }]
 
     client = Anthropic(api_key=api_key)
 
@@ -57,31 +60,39 @@ def parse_task_with_ai(text, api_key, system_prompt):
 
     result = json.loads(response_text)
 
-    # Process deadline - convert relative dates to absolute
-    if result.get('deadline'):
-        deadline_str = result['deadline'].lower()
-        now = datetime.now()
+    # Handle both single task and multiple tasks
+    # If result is a dict (single task), convert to list
+    if isinstance(result, dict):
+        tasks = [result]
+    else:
+        tasks = result
 
-        if 'tomorrow' in deadline_str:
-            deadline = now + timedelta(days=1)
-            deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
-        elif 'next week' in deadline_str:
-            deadline = now + timedelta(weeks=1)
-            deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
-        elif 'next' in deadline_str and 'monday' in deadline_str:
-            days_ahead = 7 - now.weekday()
-            deadline = now + timedelta(days=days_ahead)
-            deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
-        elif 'next' in deadline_str and 'friday' in deadline_str:
-            days_ahead = (4 - now.weekday() + 7) % 7
-            if days_ahead == 0:
-                days_ahead = 7
-            deadline = now + timedelta(days=days_ahead)
-            deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
-        else:
-            deadline = datetime.fromisoformat(result['deadline'].replace('Z', '+00:00'))
+    # Process deadline for each task - convert relative dates to absolute
+    for task in tasks:
+        if task.get('deadline'):
+            deadline_str = task['deadline'].lower()
+            now = datetime.now()
 
-        if deadline:
-            result['deadline'] = deadline.isoformat()
+            if 'tomorrow' in deadline_str:
+                deadline = now + timedelta(days=1)
+                deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
+            elif 'next week' in deadline_str:
+                deadline = now + timedelta(weeks=1)
+                deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
+            elif 'next' in deadline_str and 'monday' in deadline_str:
+                days_ahead = 7 - now.weekday()
+                deadline = now + timedelta(days=days_ahead)
+                deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
+            elif 'next' in deadline_str and 'friday' in deadline_str:
+                days_ahead = (4 - now.weekday() + 7) % 7
+                if days_ahead == 0:
+                    days_ahead = 7
+                deadline = now + timedelta(days=days_ahead)
+                deadline = deadline.replace(hour=23, minute=59, second=0, microsecond=0)
+            else:
+                deadline = datetime.fromisoformat(task['deadline'].replace('Z', '+00:00'))
 
-    return result
+            if deadline:
+                task['deadline'] = deadline.isoformat()
+
+    return tasks

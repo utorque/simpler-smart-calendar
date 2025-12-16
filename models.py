@@ -10,7 +10,8 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(500), nullable=False)
     description = db.Column(db.Text)
-    space = db.Column(db.String(100))  # work, study, association, etc.
+    space = db.Column(db.String(100))  # DEPRECATED: kept for backward compatibility, use space_id instead
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'))  # Reference to Space table
     priority = db.Column(db.Integer, default=0)  # Higher number = higher priority
     deadline = db.Column(db.DateTime)
     estimated_duration = db.Column(db.Integer)  # in minutes
@@ -21,12 +22,23 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationship to Space
+    space_rel = db.relationship('Space', backref='tasks', foreign_keys=[space_id])
+
     def to_dict(self):
+        # Determine space name - use space_rel if available, fallback to old space field
+        space_name = None
+        if self.space_rel:
+            space_name = self.space_rel.name
+        elif self.space:
+            space_name = self.space
+
         return {
             'id': self.id,
             'title': self.title,
             'description': self.description,
-            'space': self.space,
+            'space': space_name,  # For backward compatibility in UI
+            'space_id': self.space_id,
             'priority': self.priority,
             'deadline': self.deadline.isoformat() if self.deadline else None,
             'estimated_duration': self.estimated_duration,
