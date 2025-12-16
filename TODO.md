@@ -1,19 +1,15 @@
 # TODOS
 
-## URGENT
-- [ ] ctrl click to mark task done
-- [ ] lock/freeze tasks on modification in the calendar (ctrl click or sth)
-- [ ] add the current date and time to the planner so it does not plan things for too early
-- [ ] Drag task edge on calendar to change time
-- [ ] way to see tasks finished
-
-## GOOD FEATURES
+## NEXT TODO
+- [ ] POTENTIALLY FIXED ? add the current date and time to the planner so it does not plan things for too early
 - [ ] direct filter on task list to see only X or Y places
 - [ ] button to reschedule only for current filter
 - [ ] global user config (breaks, breaks after tasks,...)
+
+## GOOD FEATURES
+- [ ] redo the UI to be nicer, softer to the eye while prioritizing UX
       
 ## PLANNED
-- [ ] redo the UI to be nicer, softer to the eye while prioritizing UX
 
 ## MAYBE LATER
 - [ ] task button add context and re-plan
@@ -29,4 +25,7 @@
 ## DONE
 - [x] add space id and not name directly to change name lol
 - [x] Make AI return list of tasks instead of just one necessarily
-
+- [x] Drag task edge on calendar to change time
+- [x] way to see tasks finished
+- [x] ctrl click to mark task done
+- [x] lock/freeze tasks on modification in the calendar (ctrl click or sth)
