@@ -10,6 +10,8 @@
 ## GOOD FEATURES
 - [ ] direct filter on task list to see only X or Y places
 - [ ] button to reschedule only for current filter
+- [ ] add audio task using infomaniak whisper api
+- [ ] add telegram bot with n8n
 
 ## PLANNED
 
