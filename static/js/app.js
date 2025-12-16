@@ -6,6 +6,7 @@ let taskModal;
 let spaceModal;
 let calendarModal;
 let sortable;
+let showCompletedTasks = false;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -54,6 +55,8 @@ function initCalendar() {
         },
         slotMinTime: '06:00:00',
         slotMaxTime: '23:00:00',
+        slotDuration: '00:15:00',
+        snapDuration: '00:15:00',
         height: 'auto',
         editable: true,
         droppable: true,
@@ -107,9 +110,22 @@ function initSortable() {
 
 // Load tasks
 async function loadTasks() {
-    const response = await fetch('/api/tasks');
+    const url = showCompletedTasks ? '/api/tasks?include_completed=true' : '/api/tasks';
+    const response = await fetch(url);
     tasks = await response.json();
     renderTasks();
+}
+
+// Toggle show completed tasks
+function toggleShowCompleted() {
+    showCompletedTasks = !showCompletedTasks;
+    const btn = document.getElementById('toggleCompletedBtn');
+    btn.innerHTML = showCompletedTasks
+        ? '<i class="fas fa-eye-slash"></i>'
+        : '<i class="fas fa-eye"></i>';
+    btn.title = showCompletedTasks ? 'Hide completed tasks' : 'Show completed tasks';
+    loadTasks();
+    calendar.refetchEvents();
 }
 
 // Render tasks
@@ -222,8 +238,9 @@ async function autoSchedule() {
 
 // Load calendar events
 async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    // Load tasks
-    const taskResponse = await fetch('/api/tasks');
+    // Load tasks (include completed if toggle is on)
+    const url = showCompletedTasks ? '/api/tasks?include_completed=true' : '/api/tasks';
+    const taskResponse = await fetch(url);
     const tasks = await taskResponse.json();
 
     // Load external events
@@ -232,19 +249,29 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
 
     // Format task events
     const taskEvents = tasks
-        .filter(task => task.scheduled_start && task.scheduled_end && !task.completed)
-        .map(task => ({
-            id: `task-${task.id}`,
-            title: task.frozen ? `❄️ ${task.title}` : task.title,
-            start: task.scheduled_start,
-            end: task.scheduled_end,
-            className: task.frozen ? 'task-event frozen-task' : 'task-event',
-            extendedProps: {
-                type: 'task',
-                taskId: task.id,
-                task: task
+        .filter(task => task.scheduled_start && task.scheduled_end)
+        .map(task => {
+            let className = 'task-event';
+            if (task.completed) {
+                className += ' completed-task';
+            } else if (task.frozen) {
+                className += ' frozen-task';
             }
-        }));
+
+            return {
+                id: `task-${task.id}`,
+                title: task.frozen ? `❄️ ${task.title}` : task.title,
+                start: task.scheduled_start,
+                end: task.scheduled_end,
+                className: className,
+                editable: !task.completed, // Prevent editing completed tasks
+                extendedProps: {
+                    type: 'task',
+                    taskId: task.id,
+                    task: task
+                }
+            };
+        });
 
     // Format external events
     const formattedExternalEvents = externalEvents.map((event, index) => ({
@@ -268,12 +295,19 @@ function handleEventClick(info) {
     const event = info.event;
 
     if (event.extendedProps.type === 'task') {
-        // Check if Ctrl key is pressed
-        if (info.jsEvent.ctrlKey || info.jsEvent.metaKey) {
-            // Prevent default action and toggle freeze
+        const isCtrl = info.jsEvent.ctrlKey || info.jsEvent.metaKey;
+        const isShift = info.jsEvent.shiftKey;
+
+        if (isCtrl && isShift) {
+            // Shift+Ctrl: Mark as done/undone
+            info.jsEvent.preventDefault();
+            toggleTaskCompletion(event.extendedProps.taskId);
+        } else if (isCtrl) {
+            // Ctrl only: Toggle freeze
             info.jsEvent.preventDefault();
             toggleTaskFreeze(event.extendedProps.taskId);
         } else {
+            // Normal click: Edit task
             editTask(event.extendedProps.taskId);
         }
     }
@@ -288,8 +322,14 @@ async function handleEventDrop(info) {
         const newStart = event.start.toISOString();
         const newEnd = event.end.toISOString();
 
-        await updateTaskSchedule(taskId, newStart, newEnd);
+        // Auto-freeze task when manually moved (unless Ctrl is pressed to skip freeze)
+        const skipFreeze = info.jsEvent.ctrlKey || info.jsEvent.metaKey;
+        await updateTaskSchedule(taskId, newStart, newEnd, !skipFreeze);
         await loadTasks();
+
+        if (!skipFreeze) {
+            showAlert('Task moved and frozen ❄️', 'info');
+        }
     }
 }
 
@@ -302,8 +342,11 @@ async function handleEventResize(info) {
         const newStart = event.start.toISOString();
         const newEnd = event.end.toISOString();
 
-        // Calculate new duration
-        const duration = Math.round((event.end - event.start) / 60000); // in minutes
+        // Calculate new duration (rounded to 15-minute increments)
+        const duration = Math.round((event.end - event.start) / 60000 / 15) * 15; // in minutes
+
+        // Auto-freeze task when manually resized (unless Ctrl is pressed to skip freeze)
+        const skipFreeze = info.jsEvent.ctrlKey || info.jsEvent.metaKey;
 
         await fetch(`/api/tasks/${taskId}`, {
             method: 'PUT',
@@ -313,25 +356,39 @@ async function handleEventResize(info) {
             body: JSON.stringify({
                 scheduled_start: newStart,
                 scheduled_end: newEnd,
-                estimated_duration: duration
+                estimated_duration: duration,
+                frozen: skipFreeze ? undefined : true
             })
         });
         await loadTasks();
+        calendar.refetchEvents();
+
+        if (!skipFreeze) {
+            showAlert('Task resized and frozen ❄️', 'info');
+        }
     }
 }
 
 // Update task schedule
-async function updateTaskSchedule(taskId, start, end) {
+async function updateTaskSchedule(taskId, start, end, freeze = false) {
+    const body = {
+        scheduled_start: start,
+        scheduled_end: end
+    };
+
+    if (freeze) {
+        body.frozen = true;
+    }
+
     await fetch(`/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            scheduled_start: start,
-            scheduled_end: end
-        })
+        body: JSON.stringify(body)
     });
+
+    calendar.refetchEvents();
 }
 
 // Handle task reorder
@@ -415,6 +472,33 @@ async function deleteTask() {
     await loadTasks();
     calendar.refetchEvents();
     showAlert('Task deleted successfully!', 'success');
+}
+
+// Toggle task completion status
+async function toggleTaskCompletion(taskId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const response = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            completed: !task.completed
+        })
+    });
+
+    if (response.ok) {
+        await loadTasks();
+        calendar.refetchEvents();
+        showAlert(
+            !task.completed ? '✓ Task marked as done!' : 'Task marked as incomplete',
+            !task.completed ? 'success' : 'info'
+        );
+    } else {
+        showAlert('Error updating task', 'danger');
+    }
 }
 
 // Toggle task freeze status
