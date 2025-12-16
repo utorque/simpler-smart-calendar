@@ -65,10 +65,21 @@ def get_tasks():
 def create_task():
     data = request.json
 
+    # Support both space_id (new) and space (old, deprecated)
+    space_id = data.get('space_id')
+    space_name = data.get('space')
+
+    # If space_id not provided but space name is, try to find the space_id
+    if not space_id and space_name:
+        space_obj = Space.query.filter_by(name=space_name).first()
+        if space_obj:
+            space_id = space_obj.id
+
     task = Task(
         title=data['title'],
         description=data.get('description'),
-        space=data.get('space'),
+        space=space_name,  # Keep for backward compatibility
+        space_id=space_id,
         priority=data.get('priority', 0),
         deadline=datetime.fromisoformat(data['deadline']) if data.get('deadline') else None,
         estimated_duration=data.get('estimated_duration', 60)
@@ -102,36 +113,48 @@ def parse_task():
     ### Append list of spaces to the system prompt
 
     spaces = Space.query.all()
-    space_names = [space.name for space in spaces]
-    spaces_descs = "\n".join([f"- {space.name}: {space.description}" for space in spaces])
+    # Include space ID, name, and description for AI context
+    spaces_info = "\n".join([f"- ID: {space.id}, Name: {space.name}, Description: {space.description}" for space in spaces])
 
-    system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_descs
+    system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_info
 
-    task_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], system_prompt)
+    # parse_task_with_ai now returns a list of tasks
+    tasks_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], system_prompt)
 
-    task = Task(
-        title=task_data['title'],
-        description=task_data.get('description'),
-        space=task_data.get('space'),
-        priority=task_data.get('priority', 0),
-        deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
-        estimated_duration=task_data.get('estimated_duration', 60)
-    )
+    # Create all tasks returned by the AI
+    created_tasks = []
+    for task_data in tasks_data:
+        task = Task(
+            title=task_data['title'],
+            description=task_data.get('description'),
+            space_id=task_data.get('space_id'),
+            priority=task_data.get('priority', 0),
+            deadline=datetime.fromisoformat(task_data['deadline']) if task_data.get('deadline') else None,
+            estimated_duration=task_data.get('estimated_duration', 60)
+        )
 
-    db.session.add(task)
+        db.session.add(task)
+        db.session.flush()  # Flush to get task.id before commit
+
+        # Log the creation
+        log = ChangeLog(
+            action='create',
+            entity_type='task',
+            entity_id=task.id,
+            new_value=json.dumps(task.to_dict())
+        )
+        db.session.add(log)
+        created_tasks.append(task)
+
     db.session.commit()
 
-    # Log the creation
-    log = ChangeLog(
-        action='create',
-        entity_type='task',
-        entity_id=task.id,
-        new_value=json.dumps(task.to_dict())
-    )
-    db.session.add(log)
-    db.session.commit()
-
-    return jsonify(task.to_dict()), 201
+    # Return all created tasks
+    # If only one task, return it directly for backward compatibility
+    # If multiple tasks, return an array
+    if len(created_tasks) == 1:
+        return jsonify(created_tasks[0].to_dict()), 201
+    else:
+        return jsonify([task.to_dict() for task in created_tasks]), 201
 
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
@@ -148,6 +171,8 @@ def update_task(task_id):
         task.description = data['description']
     if 'space' in data:
         task.space = data['space']
+    if 'space_id' in data:
+        task.space_id = data['space_id']
     if 'priority' in data:
         task.priority = data['priority']
     if 'deadline' in data:

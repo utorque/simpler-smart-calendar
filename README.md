@@ -205,7 +205,7 @@ This will:
 
 ### AI Task Parsing
 
-The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system prompt is stored in `prompt.md` and loaded once on application startup. This makes it easy to customize the AI's behavior without modifying code:
+The AI task parsing is powered by Anthropic's Claude 4.5 Haiku model. The system prompt is stored in `prompt.md` and loaded once on application startup. This makes it easy to customize the AI's behavior without modifying code:
 
 1. Edit `prompt.md` to adjust how tasks are parsed
 2. Restart the application to load the updated prompt
@@ -246,7 +246,7 @@ The AI task parsing is powered by Anthropic's Claude 3.5 Haiku model. The system
 ### Backend
 - **Flask**: Web framework
 - **SQLite**: Database for tasks, spaces, and logs
-- **Anthropic Claude**: AI-powered task parsing (using Claude 3.5 Haiku)
+- **Anthropic Claude**: AI-powered task parsing (using Claude 4.5 Haiku)
 - **icalendar**: ICS calendar parsing
 
 ### Frontend
