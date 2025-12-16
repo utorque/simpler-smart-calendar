@@ -6,7 +6,9 @@ This update improves the way spaces and tasks are handled by the AI parser:
 
 1. **Space ID Usage**: The AI now receives and returns space IDs instead of space names for more robust data integrity
 2. **Multiple Task Support**: The AI can now return multiple tasks from a single input when appropriate
-3. **Database Schema Update**: Added `space_id` foreign key column to tasks table
+3. **Time-Based Priority**: AI computes time remaining until deadline and adjusts priority accordingly
+4. **Current Time Context**: AI receives current date and time (not just date) for better deadline calculation
+5. **Database Schema Update**: Added `space_id` foreign key column to tasks table
 
 ## Changes Made
 
@@ -20,11 +22,16 @@ This update improves the way spaces and tasks are handled by the AI parser:
 - Updated to instruct AI to return `space_id` (numeric) instead of `space` (string)
 - Added support for returning multiple tasks as a JSON array
 - Emphasized preference for single task unless input clearly describes multiple distinct tasks
+- Added time-based priority adjustment guidelines:
+  - Computes time remaining to deadline
+  - Adjusts priority based on urgency (<3 hours = 9-10, 3-24 hours = 7-9, etc.)
+  - Combines with urgency keywords for final priority
 - Added example showing multiple task output format
 - Updated all examples to use `space_id`
 
 ### 3. AI Parser (`ai_parser.py`)
 - Modified `parse_task_with_ai()` to return a list of tasks instead of a single task
+- Updated to send current date and time (not just date) to AI for better context
 - Updated to handle both single task objects and arrays from AI response
 - Updated fallback logic to return list with `space_id` field
 - Updated docstring to reflect new behavior

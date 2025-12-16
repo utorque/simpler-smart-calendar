@@ -31,8 +31,9 @@ def parse_task_with_ai(text, api_key, system_prompt):
 
     client = Anthropic(api_key=api_key)
 
-    # Add today's date to the user message for context
-    user_message = f"Today's date is {datetime.now().strftime('%Y-%m-%d')}.\n\nTask to parse:\n{text}"
+    # Add current date and time to the user message for context
+    now = datetime.now()
+    user_message = f"Current date and time: {now.strftime('%Y-%m-%d %H:%M')}.\n\nTask to parse:\n{text}"
 
     response = client.messages.create(
         model="claude-3-5-haiku-20241022",

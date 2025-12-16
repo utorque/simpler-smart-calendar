@@ -1,10 +1,12 @@
 # Smart Task Calendar - Project Description
 
+> **Note**: This document should be kept up to date with all code changes, feature additions, and architectural modifications.
+
 ## Project Overview
 
 **Smart Task Calendar** is an ADHD-friendly task management web application that combines AI-powered task parsing with intelligent auto-scheduling. Users can paste natural language text (emails, notes, etc.), and the system automatically extracts task details and schedules them on a calendar based on priority, deadlines, and contextual constraints.
 
-**Current Version**: Production-ready with task freezing feature
+**Current Version**: Production-ready with space ID support and multi-task parsing
 **Primary Use**: Self-hosted personal task management
 **Target Users**: Individuals with ADHD who need simple, fast task organization
 
@@ -70,7 +72,8 @@ Primary task storage with scheduling and metadata.
 | id | INTEGER | PRIMARY KEY | Auto-incrementing task ID |
 | title | STRING(500) | NOT NULL | Task title |
 | description | TEXT | NULLABLE | Detailed task description |
-| space | STRING(100) | NULLABLE | Context/category (work, study, etc.) |
+| space | STRING(100) | NULLABLE | DEPRECATED: Category name (use space_id) |
+| space_id | INTEGER | FOREIGN KEY | Reference to spaces.id |
 | priority | INTEGER | DEFAULT 0 | Priority 0-10, higher = more urgent |
 | deadline | DATETIME | NULLABLE | Task deadline (ISO format) |
 | estimated_duration | INTEGER | NULLABLE | Duration in minutes |
@@ -395,26 +398,29 @@ Get change logs for audit/learning.
 
 ### 1. AI Task Parsing
 
-**File**: `ai_parser.py:6-87`
+**File**: `ai_parser.py:6-98`
 
 **Process**:
 1. User submits raw text via `/api/tasks/parse`
-2. System appends current date to prompt
-3. Fetches all spaces and adds descriptions to system prompt
+2. System appends current date and time to prompt
+3. Fetches all spaces with IDs, names, and descriptions
 4. Calls Claude 3.5 Haiku with system prompt from `prompt.md`
-5. AI returns JSON with task fields
+5. AI returns JSON with task fields (single object or array)
 6. Handles relative dates ("tomorrow", "next week", etc.)
-7. Creates task in database
+7. Creates task(s) in database with space_id reference
 8. Logs creation in change_logs
+
+**Multi-Task Support**: AI can return multiple tasks if input clearly describes multiple distinct tasks (e.g., "do X, Y, and Z"). Prefers single task when possible.
 
 **Fallback**: If no API key, uses simple parsing (first 100 chars as title).
 
 **Prompt Engineering**:
 - System prompt loaded once on startup (config.py:7-13)
-- Includes space descriptions for context-aware parsing
-- Priority guidelines (0-10 scale)
+- Includes space IDs, names, and descriptions for context-aware parsing
+- Time-based priority adjustment using deadline proximity
+- Priority guidelines (0-10 scale) with urgency scoring
 - Duration estimation rules
-- Date/time parsing logic
+- Date/time parsing logic with current time context
 
 ### 2. Auto-Scheduling Algorithm
 
@@ -429,9 +435,11 @@ Get change logs for audit/learning.
 
 **Priority System**:
 1. Frozen tasks (never moved)
-2. Higher priority number (0-10)
+2. Higher priority number (0-10, with AI time-based adjustment)
 3. Closer deadline
 4. Earlier creation time
+
+**AI Priority Calculation**: When parsing tasks with deadlines, the AI computes time remaining and adjusts priority accordingly (e.g., <3 hours = 9-10 priority, 3-24 hours = 7-9, etc.), combined with urgency keywords.
 
 **Search Strategy**:
 - Searches up to 90 days ahead
@@ -767,21 +775,25 @@ def slots_overlap(start1, end1, start2, end2):
 ### Important Behaviors
 
 1. **Frozen Tasks**: Never moved by auto-schedule but block other tasks
-2. **Priority Scale**: 0-10, where 10 is critical/ASAP
+2. **Priority Scale**: 0-10, where 10 is critical/ASAP, with time-based AI adjustment
 3. **Time Increments**: All scheduling in 30-minute blocks
 4. **Default Duration**: 60 minutes if not specified
-5. **Space Matching**: AI uses space descriptions for context detection
-6. **Deadline Behavior**: Tasks without deadlines can be scheduled anytime
-7. **External Events**: Fetched on-demand and during auto-schedule
-8. **Change Logs**: All actions logged for future learning
-9. **Session Timeout**: Flask default (31 days if permanent, browser session if not)
-10. **Database Init**: Auto-creates tables and default spaces on first run
+5. **Space Matching**: AI uses space IDs, names, and descriptions for context detection
+6. **Multi-Task Parsing**: AI can return multiple tasks from single input when obviously distinct
+7. **Deadline Behavior**: Tasks without deadlines can be scheduled anytime; with deadlines affect priority
+8. **External Events**: Fetched on-demand and during auto-schedule
+9. **Change Logs**: All actions logged for future learning
+10. **Session Timeout**: Flask default (31 days if permanent, browser session if not)
+11. **Database Init**: Auto-creates tables and default spaces on first run
+12. **Space References**: Tasks use space_id (foreign key) for data integrity; space name field deprecated
 
 ## Version History
 
 **Current State** (Dec 2025):
 - ✅ Task freezing (ctrl+click, day freezing)
-- ✅ Space-based scheduling with descriptions
+- ✅ Space-based scheduling with space_id foreign keys
+- ✅ Multi-task AI parsing support
+- ✅ Time-based priority adjustment in AI
 - ✅ External calendar integration (ICS)
 - ✅ AI task parsing (Claude 3.5 Haiku)
 - ✅ Auto-scheduling algorithm
@@ -791,19 +803,21 @@ def slots_overlap(start1, end1, start2, end2):
 - ✅ Priority-based ordering
 
 **Recent Changes** (from git log):
+- Space ID support with foreign keys (commit 33583e7)
+- Multi-task AI parsing capability
+- Time-based priority adjustment
 - Task freezing feature (commit 2ebb0d6)
-- Migration scripts cleanup
-- README capitalization fix
 
 ## Support & Documentation
 
 - **README.md**: User-facing documentation
 - **TODO.md**: Development roadmap
+- **MIGRATION_NOTES.md**: Space ID migration guide
 - **LICENSE**: Apache 2.0 (assumed based on LICENSE file presence)
 - **Issues**: GitHub issues (mention in README)
 
 ---
 
-**Last Updated**: 2025-12-15
+**Last Updated**: 2025-12-16
 **Documentation Version**: 1.0
 **Project Status**: Production-ready, actively maintained

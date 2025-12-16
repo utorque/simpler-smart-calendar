@@ -21,7 +21,17 @@ Each task should be a JSON object with the following fields:
 - **5-7**: Important, should do, normal priority
 - **3-4**: Nice to have, when possible, low priority
 - **0-2**: Optional, someday/maybe, very low priority
-The further away the deadline, the lower the priority
+
+**Time-based Priority Adjustment**: When a specific deadline is provided:
+1. First compute the time remaining until the deadline (using the current date/time provided)
+2. Use this time remaining to adjust priority:
+   - Less than 3 hours remaining: Priority 9-10 (very urgent)
+   - 3-24 hours remaining: Priority 7-9 (urgent)
+   - 1-3 days remaining: Priority 6-8 (important)
+   - 3-7 days remaining: Priority 5-7 (normal)
+   - More than 7 days: Priority based on task importance (3-6)
+3. Combine this with urgency indicators in the text (ASAP, urgent, etc.) to determine final priority
+4. The closer the deadline, the higher the priority should generally be
 
 ## Duration Guidelines
 Look for time indicators in the text:
