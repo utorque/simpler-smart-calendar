@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY . .
+COPY src/ ./src/
 
 # Create directory for database
 RUN mkdir -p /app/instance
@@ -16,8 +16,9 @@ RUN mkdir -p /app/instance
 EXPOSE 5000
 
 # Set environment variables
-ENV FLASK_APP=app.py
+ENV FLASK_APP=src/app.py
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
 
 # Run the application
-CMD ["python", "app.py"]
+CMD ["python", "src/app.py"]
