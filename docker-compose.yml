@@ -8,3 +8,4 @@ services:
     restart: unless-stopped
     volumes:
       - ./instance:/app/instance
+      - ./src:/app/src

@@ -16,8 +16,6 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tasks.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Keep ANTHROPIC_API_KEY for backward compatibility
-    ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
     # New generic AI configuration
     AI_API_KEY = os.getenv('AI_API_KEY')
     AI_API_BASE_URL = os.getenv('AI_API_BASE_URL', 'https://api.openai.com/v1/')
