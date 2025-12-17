@@ -2,7 +2,6 @@
 
 ## NEXT TODO
 - [ ] global user config (breaks, breaks after tasks, work times for everything). update the db accordingly and create a migrate.py using sqlite directly so it can work for prod database.
-- [ ] redo ai api to be generic / use mistral or cheaper & less energy intensive models ; infomaniak api looks cheap (mistral 24b instruct) ; I suppose use openai python interface with api url and apikey as env variables.
 - [ ] add green hosting label -> <img src="https://app.greenweb.org/api/v3/greencheckimage/simpler.utorque.ch?nocache=true" alt="This website runs on green hosting - verified by thegreenwebfoundation.org" width="200px" height="95px">
 - [ ] clic/dragclic calendar to create a task (paste text as the rest)
 - [ ] shift+drag on the calendar to reserve timespan for a space
@@ -20,6 +19,8 @@
 
 
 ## PLANNED
+- [ ] investigate not all tasks planned when many tasked ?
+- [ ] add list view to calendar
 
 ## MAYBE LATER
 - [ ] task button add context and re-plan
@@ -34,7 +35,7 @@
 
 ## DONE
 - [x] LOOKS FIXED ? add the current date and time to the planner so it does not plan things for too early
-
+- [x] redo ai api to be generic / use mistral or cheaper & less energy intensive models ; infomaniak api looks cheap (mistral 24b instruct) ; I suppose use openai python interface with api url and apikey as env variables.
 - [x] add space id and not name directly to change name lol
 - [x] Make AI return list of tasks instead of just one necessarily
 - [x] Drag task edge on calendar to change time
