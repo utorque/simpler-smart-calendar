@@ -1,15 +1,10 @@
-version: '3.8'
-
 services:
   web:
     build: .
     ports:
-      - "5000:5000"
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - APP_PASSWORD=${APP_PASSWORD:-admin}
-      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
-      - FLASK_ENV=${FLASK_ENV:-production}
+      - "53000:53000"
+    env_file:
+      - .env
+    restart: unless-stopped
     volumes:
       - ./instance:/app/instance
-    restart: unless-stopped
