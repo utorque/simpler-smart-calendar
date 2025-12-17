@@ -20,6 +20,8 @@
 - [ ] ctrl shift click on the task list to remove it
 - [ ] help modal to see all shortcuts
 
+- [ ] do some marketing planning to redo the ui and sell points (swiss made, environmentally friendly ai with infomaniak, opensource models with mistral, fair usage-based pricing instead of subscription)
+
 
 ## PLANNED
 - [ ] investigate not all tasks planned when many tasked ?
