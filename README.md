@@ -152,7 +152,24 @@ python app.py
 
 ### Environment Variables
 
-- `ANTHROPIC_API_KEY`: Your Anthropic API key for AI task parsing (get one at https://console.anthropic.com/)
+The application now supports multiple AI providers through a generic interface:
+
+#### AI Provider Configuration (New)
+
+- `AI_API_KEY`: API key for your chosen AI provider
+- `AI_API_BASE_URL`: Base URL for the AI API (default: `https://api.openai.com/v1/`)
+- `AI_MODEL`: Model name to use (default: `gpt-3.5-turbo`)
+
+**Supported Providers:**
+
+- **Anthropic Claude**: Set `AI_API_BASE_URL=https://api.anthropic.com/` and use models like `claude-haiku-4-5`
+- **Mistral**: Set `AI_API_BASE_URL=https://api.mistral.ai/v1/` and use models like `mistral-small`
+- **OpenAI**: Use default settings or set `AI_API_BASE_URL=https://api.openai.com/v1/` with models like `gpt-3.5-turbo`
+- **Other OpenAI-compatible APIs**: Set the appropriate base URL and model
+
+#### Legacy Configuration (Backward Compatible)
+
+- `ANTHROPIC_API_KEY`: Still supported for backward compatibility (will be used if `AI_API_KEY` is not set)
 - `APP_PASSWORD`: Single password to access the application
 - `SECRET_KEY`: Secret key for Flask sessions (generate a random string)
 - `FLASK_ENV`: Set to `production` for production deployment

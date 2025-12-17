@@ -134,7 +134,7 @@ def parse_task():
     system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_info
 
     # parse_task_with_ai now returns a list of tasks
-    tasks_data = parse_task_with_ai(text, app.config['ANTHROPIC_API_KEY'], system_prompt)
+    tasks_data = parse_task_with_ai(text, system_prompt)
 
     # Create all tasks returned by the AI
     created_tasks = []
