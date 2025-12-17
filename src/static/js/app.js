@@ -35,6 +35,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('deleteTaskBtn').addEventListener('click', deleteTask);
     document.getElementById('saveCalendarBtn').addEventListener('click', saveCalendar);
 
+    // Event delegation for task list (more efficient than attaching to each item)
+    document.getElementById('taskList').addEventListener('click', (e) => {
+        const taskItem = e.target.closest('.task-item');
+        if (taskItem) {
+            const taskId = parseInt(taskItem.dataset.taskId);
+            editTask(taskId);
+        }
+    });
+
     // Allow Enter key in task input to submit
     document.getElementById('taskInput').addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
@@ -71,31 +80,35 @@ function initCalendar() {
 }
 
 // Setup listeners for day headers to enable Ctrl+Click to freeze days
+// Use event delegation on parent to avoid cloning and individual listeners
 function setupDayHeaderListeners() {
-    // Small delay to ensure DOM is ready
     setTimeout(() => {
+        // Find the header container
+        const headerRow = document.querySelector('.fc-col-header');
+        if (!headerRow || headerRow.dataset.listenerAttached) return;
+
+        // Mark as having listener to prevent duplicate attachment
+        headerRow.dataset.listenerAttached = 'true';
+
+        // Use event delegation instead of individual listeners
+        headerRow.addEventListener('click', function(e) {
+            const header = e.target.closest('.fc-col-header-cell[data-date]');
+            if (header && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                const dateStr = header.getAttribute('data-date');
+                if (dateStr) {
+                    freezeDay(dateStr);
+                }
+            }
+        });
+
+        // Add visual hints to all day headers
         const dayHeaders = document.querySelectorAll('.fc-col-header-cell[data-date]');
         dayHeaders.forEach(header => {
-            // Remove existing listener to avoid duplicates
-            const newHeader = header.cloneNode(true);
-            header.parentNode.replaceChild(newHeader, header);
-
-            // Add click listener
-            newHeader.addEventListener('click', function(e) {
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    const dateStr = this.getAttribute('data-date');
-                    if (dateStr) {
-                        freezeDay(dateStr);
-                    }
-                }
-            });
-
-            // Add visual hint
-            newHeader.style.cursor = 'pointer';
-            newHeader.title = 'Ctrl+Click to freeze/unfreeze all tasks on this day';
+            header.style.cursor = 'pointer';
+            header.title = 'Ctrl+Click to freeze/unfreeze all tasks on this day';
         });
-    }, 100);
+    }, 50);
 }
 
 // Initialize sortable for task list
@@ -128,7 +141,7 @@ function toggleShowCompleted() {
     calendar.refetchEvents();
 }
 
-// Render tasks
+// Render tasks with optimized DOM updates
 function renderTasks() {
     const taskList = document.getElementById('taskList');
 
@@ -142,7 +155,10 @@ function renderTasks() {
         return;
     }
 
-    taskList.innerHTML = tasks.map(task => {
+    // Use DocumentFragment for efficient DOM manipulation
+    const fragment = document.createDocumentFragment();
+
+    tasks.forEach(task => {
         const priorityClass = task.priority >= 7 ? 'priority-high' :
                              task.priority >= 4 ? 'priority-medium' : 'priority-low';
 
@@ -150,28 +166,28 @@ function renderTasks() {
         const deadlineStr = deadline ? formatDeadline(deadline) : '';
         const isSoon = deadline && (deadline - new Date()) < 24 * 60 * 60 * 1000;
 
-        return `
-            <div class="task-item ${task.completed ? 'completed' : ''} ${task.frozen ? 'frozen' : ''}" data-task-id="${task.id}">
-                <div class="task-priority ${priorityClass}">${task.priority}</div>
-                <div class="task-title">${task.frozen ? '❄️ ' : ''}${escapeHtml(task.title)}</div>
-                <div class="task-meta">
-                    ${task.space ? `<span class="task-space"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(task.space)}</span>` : ''}
-                    ${task.estimated_duration ? `<span class="task-meta-item"><i class="fas fa-clock"></i> ${task.estimated_duration}min</span>` : ''}
-                    ${deadlineStr ? `<span class="task-meta-item task-deadline ${isSoon ? 'soon' : ''}"><i class="fas fa-calendar-times"></i> ${deadlineStr}</span>` : ''}
-                    ${task.scheduled_start ? `<span class="task-meta-item"><i class="fas fa-calendar-check"></i> Scheduled</span>` : ''}
-                    ${task.frozen ? `<span class="task-meta-item frozen-indicator"><i class="fas fa-snowflake"></i> Frozen</span>` : ''}
-                </div>
+        const taskDiv = document.createElement('div');
+        taskDiv.className = `task-item ${task.completed ? 'completed' : ''} ${task.frozen ? 'frozen' : ''}`;
+        taskDiv.dataset.taskId = task.id;
+
+        taskDiv.innerHTML = `
+            <div class="task-priority ${priorityClass}">${task.priority}</div>
+            <div class="task-title">${task.frozen ? '❄️ ' : ''}${escapeHtml(task.title)}</div>
+            <div class="task-meta">
+                ${task.space ? `<span class="task-space"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(task.space)}</span>` : ''}
+                ${task.estimated_duration ? `<span class="task-meta-item"><i class="fas fa-clock"></i> ${task.estimated_duration}min</span>` : ''}
+                ${deadlineStr ? `<span class="task-meta-item task-deadline ${isSoon ? 'soon' : ''}"><i class="fas fa-calendar-times"></i> ${deadlineStr}</span>` : ''}
+                ${task.scheduled_start ? `<span class="task-meta-item"><i class="fas fa-calendar-check"></i> Scheduled</span>` : ''}
+                ${task.frozen ? `<span class="task-meta-item frozen-indicator"><i class="fas fa-snowflake"></i> Frozen</span>` : ''}
             </div>
         `;
-    }).join('');
 
-    // Add click handlers to task items
-    document.querySelectorAll('.task-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const taskId = parseInt(item.dataset.taskId);
-            editTask(taskId);
-        });
+        fragment.appendChild(taskDiv);
     });
+
+    // Clear and append in one operation
+    taskList.innerHTML = '';
+    taskList.appendChild(fragment);
 }
 
 // Parse task with AI
@@ -238,14 +254,16 @@ async function autoSchedule() {
 
 // Load calendar events
 async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
-    // Load tasks (include completed if toggle is on)
+    // Load tasks and external events in parallel for better performance
     const url = showCompletedTasks ? '/api/tasks?include_completed=true' : '/api/tasks';
-    const taskResponse = await fetch(url);
-    const tasks = await taskResponse.json();
-
-    // Load external events
-    const externalResponse = await fetch('/api/external-events');
-    const externalEvents = await externalResponse.json();
+    const [taskResponse, externalResponse] = await Promise.all([
+        fetch(url),
+        fetch('/api/external-events')
+    ]);
+    const [tasks, externalEvents] = await Promise.all([
+        taskResponse.json(),
+        externalResponse.json()
+    ]);
 
     // Format task events
     const taskEvents = tasks
@@ -937,21 +955,6 @@ function formatDeadline(date) {
     return date.toLocaleDateString();
 }
 
-function formatDateTimeLocal(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function getDayName(dayIndex) {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    return days[dayIndex];
-}
-
 // Format date to ISO string in local timezone (not UTC)
 function formatDateTimeLocal(date) {
     const year = date.getFullYear();
@@ -962,4 +965,9 @@ function formatDateTimeLocal(date) {
     const seconds = String(date.getSeconds()).padStart(2, '0');
 
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+function getDayName(dayIndex) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[dayIndex];
 }
