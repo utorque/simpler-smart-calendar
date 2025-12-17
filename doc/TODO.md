@@ -17,6 +17,9 @@
 - [ ] add telegram bot with n8n
 - [ ] Add "Overall view" with a global dashboard and informations with task list, groups etc instead of calendar. UX research opportunity for good things ? Research tailored for ADHD ?
 
+- [ ] ctrl shift click on the task list to remove it
+- [ ] help modal to see all shortcuts
+
 
 ## PLANNED
 - [ ] investigate not all tasks planned when many tasked ?
