@@ -36,7 +36,8 @@
 - [ ] optimize system prompt
 
 ## MEH
-- [ ] Potentially going all in in project management ?
+- [ ] actual full personal organizer with pages that allow to save links of personal stuff, your home page, linked with spaces. idea : main page to see the amount of tasks and all basic links to get started
+- [ ] subspaces & subtaskd
 
 ## DONE
 - [x] LOOKS FIXED ? add the current date and time to the planner so it does not plan things for too early
