@@ -5,6 +5,7 @@ let calendar;
 let taskModal;
 let spaceModal;
 let calendarModal;
+let addTaskModal;
 let sortable;
 let showCompletedTasks = false;
 
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
     taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
     spaceModal = new bootstrap.Modal(document.getElementById('spaceModal'));
     calendarModal = new bootstrap.Modal(document.getElementById('calendarModal'));
+    addTaskModal = new bootstrap.Modal(document.getElementById('addTaskModal'));
 
     // Initialize calendar
     initCalendar();
@@ -34,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('saveTaskBtn').addEventListener('click', saveTask);
     document.getElementById('deleteTaskBtn').addEventListener('click', deleteTask);
     document.getElementById('saveCalendarBtn').addEventListener('click', saveCalendar);
+    document.getElementById('createTaskFromModalBtn').addEventListener('click', createTaskFromModal);
 
     // Event delegation for task list (more efficient than attaching to each item)
     document.getElementById('taskList').addEventListener('click', (e) => {
@@ -48,6 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('taskInput').addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
             parseTask();
+        }
+    });
+
+    // Allow Ctrl+Enter in add task modal
+    document.getElementById('addTaskInput').addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            createTaskFromModal();
         }
     });
 });
@@ -227,6 +237,11 @@ async function parseTask() {
 
         // Clear the selected space
         window.selectedSpaceForNewTask = null;
+
+        // Update overview if we're on that view
+        if (document.getElementById('overviewView').style.display !== 'none') {
+            renderOverview();
+        }
     } else {
         const error = await response.json();
         showAlert(error.error || 'Error creating task', 'danger');
@@ -1252,31 +1267,75 @@ function renderSpaceTasks(spaceTasks) {
 
 // Open add task modal with pre-filled space
 function openAddTaskForSpace(spaceName) {
-    // Focus on task input and pre-fill space context in a user-friendly way
-    const taskInput = document.getElementById('taskInput');
-    taskInput.focus();
-
-    // Scroll to top to show the task input
-    document.querySelector('.task-panel').scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-
     // Store the selected space for when task is created
     window.selectedSpaceForNewTask = spaceName;
 
-    // Add a visual indicator
-    const parseBtn = document.getElementById('parseTaskBtn');
-    const originalText = parseBtn.innerHTML;
-    parseBtn.innerHTML = `<i class="fas fa-magic"></i> Create Task for ${escapeHtml(spaceName)}`;
+    // Update modal title
+    const modalTitle = document.getElementById('addTaskModalTitle');
+    modalTitle.textContent = `Create Task for ${spaceName}`;
 
-    // Reset after 5 seconds or on input
-    const resetButton = () => {
-        parseBtn.innerHTML = originalText;
+    // Clear the input
+    document.getElementById('addTaskInput').value = '';
+
+    // Show the modal
+    addTaskModal.show();
+
+    // Focus on the textarea after modal is shown
+    setTimeout(() => {
+        document.getElementById('addTaskInput').focus();
+    }, 150);
+}
+
+// Create task from modal
+async function createTaskFromModal() {
+    const input = document.getElementById('addTaskInput');
+    const text = input.value.trim();
+
+    if (!text) {
+        showAlert('Please enter a task description', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('createTaskFromModalBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="loading"></span> Creating...';
+    btn.disabled = true;
+
+    // Prepare request body with optional space hint
+    const requestBody = { text };
+    if (window.selectedSpaceForNewTask) {
+        requestBody.space_hint = window.selectedSpaceForNewTask;
+    }
+
+    const response = await fetch('/api/tasks/parse', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    });
+
+    if (response.ok) {
+        input.value = '';
+        await loadTasks();
+        calendar.refetchEvents();
+        showAlert('Task created successfully!', 'success');
+
+        // Clear the selected space
         window.selectedSpaceForNewTask = null;
-        taskInput.removeEventListener('input', resetButton);
-    };
 
-    setTimeout(resetButton, 5000);
-    taskInput.addEventListener('input', resetButton, { once: true });
+        // Update overview if we're on that view
+        if (document.getElementById('overviewView').style.display !== 'none') {
+            renderOverview();
+        }
+
+        // Close the modal
+        addTaskModal.hide();
+    } else {
+        const error = await response.json();
+        showAlert(error.error || 'Error creating task', 'danger');
+    }
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 }

@@ -71,21 +71,23 @@
             <div class="col-md-8 calendar-panel">
                 <div class="panel-header">
                     <h3 id="viewTitle">Schedule</h3>
-                    <div class="view-tabs">
-                        <button class="view-tab active" id="calendarTab" onclick="switchView('calendar')">
-                            <i class="fas fa-calendar"></i> Calendar
-                        </button>
-                        <button class="view-tab" id="overviewTab" onclick="switchView('overview')">
-                            <i class="fas fa-chart-pie"></i> Overview
-                        </button>
-                    </div>
-                    <div class="calendar-legend" id="calendarLegend">
-                        <span class="legend-item">
-                            <span class="badge bg-primary">My Tasks</span>
-                        </span>
-                        <span class="legend-item">
-                            <span class="badge bg-secondary">External Events</span>
-                        </span>
+                    <div class="panel-header-right">
+                        <div class="view-tabs">
+                            <button class="view-tab active" id="calendarTab" onclick="switchView('calendar')">
+                                <i class="fas fa-calendar"></i> Calendar
+                            </button>
+                            <button class="view-tab" id="overviewTab" onclick="switchView('overview')">
+                                <i class="fas fa-chart-pie"></i> Overview
+                            </button>
+                        </div>
+                        <div class="calendar-legend" id="calendarLegend">
+                            <span class="legend-item">
+                                <span class="badge bg-primary">My Tasks</span>
+                            </span>
+                            <span class="legend-item">
+                                <span class="badge bg-secondary">External Events</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -279,6 +281,34 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="saveCalendarBtn">Add Calendar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalTitle">Create Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea
+                        class="form-control"
+                        id="addTaskInput"
+                        rows="4"
+                        placeholder="Paste your email, describe your task, or just write what you need to do..."></textarea>
+                    <div class="form-text mt-2">
+                        Press Ctrl+Enter to create task quickly
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="createTaskFromModalBtn">
+                        <i class="fas fa-magic"></i> Create Task
+                    </button>
                 </div>
             </div>
         </div>

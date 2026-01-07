@@ -365,6 +365,13 @@ body {
     gap: 15px;
 }
 
+.panel-header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
 /* Overview Stats */
 .overview-stats {
     margin-top: 20px;
