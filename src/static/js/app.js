@@ -205,12 +205,18 @@ async function parseTask() {
     btn.innerHTML = '<span class="loading"></span> Creating...';
     btn.disabled = true;
 
+    // Prepare request body with optional space hint
+    const requestBody = { text };
+    if (window.selectedSpaceForNewTask) {
+        requestBody.space_hint = window.selectedSpaceForNewTask;
+    }
+
     const response = await fetch('/api/tasks/parse', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ text })
+        body: JSON.stringify(requestBody)
     });
 
     if (response.ok) {
@@ -218,6 +224,9 @@ async function parseTask() {
         await loadTasks();
         calendar.refetchEvents();
         showAlert('Task created successfully!', 'success');
+
+        // Clear the selected space
+        window.selectedSpaceForNewTask = null;
     } else {
         const error = await response.json();
         showAlert(error.error || 'Error creating task', 'danger');
@@ -970,4 +979,304 @@ function formatDateTimeLocal(date) {
 function getDayName(dayIndex) {
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     return days[dayIndex];
+}
+
+// ===== OVERVIEW TAB FUNCTIONALITY =====
+
+// Switch between calendar and overview views
+function switchView(view) {
+    const calendarView = document.getElementById('calendarView');
+    const overviewView = document.getElementById('overviewView');
+    const calendarTab = document.getElementById('calendarTab');
+    const overviewTab = document.getElementById('overviewTab');
+    const calendarLegend = document.getElementById('calendarLegend');
+    const viewTitle = document.getElementById('viewTitle');
+
+    if (view === 'calendar') {
+        calendarView.style.display = 'block';
+        overviewView.style.display = 'none';
+        calendarTab.classList.add('active');
+        overviewTab.classList.remove('active');
+        calendarLegend.style.display = 'flex';
+        viewTitle.textContent = 'Schedule';
+    } else if (view === 'overview') {
+        calendarView.style.display = 'none';
+        overviewView.style.display = 'block';
+        calendarTab.classList.remove('active');
+        overviewTab.classList.add('active');
+        calendarLegend.style.display = 'none';
+        viewTitle.textContent = 'Overview';
+        renderOverview();
+    }
+}
+
+// Render the overview with stats and space cards
+function renderOverview() {
+    calculateStats();
+    renderSpaceCards();
+}
+
+// Calculate and display overview statistics
+function calculateStats() {
+    const activeTasks = tasks.filter(t => !t.completed);
+    const totalTasks = activeTasks.length;
+    const scheduledTasks = activeTasks.filter(t => t.scheduled_start && t.scheduled_end).length;
+
+    // Calculate total hours planned
+    let totalMinutes = 0;
+    activeTasks.forEach(task => {
+        if (task.estimated_duration) {
+            totalMinutes += task.estimated_duration;
+        }
+    });
+    const hoursPlanned = (totalMinutes / 60).toFixed(1);
+
+    // Calculate urgent tasks (deadline within 24 hours or high priority)
+    const now = new Date();
+    const urgentTasks = activeTasks.filter(task => {
+        if (task.priority >= 8) return true;
+        if (task.deadline) {
+            const deadline = new Date(task.deadline);
+            const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
+            return hoursUntilDeadline > 0 && hoursUntilDeadline <= 24;
+        }
+        return false;
+    }).length;
+
+    // Update stat displays
+    document.getElementById('statTotalTasks').textContent = totalTasks;
+    document.getElementById('statHoursPlanned').textContent = hoursPlanned;
+    document.getElementById('statScheduled').textContent = scheduledTasks;
+    document.getElementById('statUrgent').textContent = urgentTasks;
+}
+
+// Render space cards with tasks
+function renderSpaceCards() {
+    const container = document.getElementById('spaceCardsContainer');
+    const activeTasks = tasks.filter(t => !t.completed);
+
+    // If no spaces, show a message
+    if (spaces.length === 0) {
+        container.innerHTML = `
+            <div class="empty-space">
+                <i class="fas fa-inbox"></i>
+                <p>No spaces defined yet. Create spaces to organize your tasks!</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Group tasks by space
+    const tasksBySpace = {};
+    const unassignedTasks = [];
+
+    activeTasks.forEach(task => {
+        if (task.space) {
+            if (!tasksBySpace[task.space]) {
+                tasksBySpace[task.space] = [];
+            }
+            tasksBySpace[task.space].push(task);
+        } else {
+            unassignedTasks.push(task);
+        }
+    });
+
+    // Calculate metrics for each space
+    const spaceMetrics = spaces.map(space => {
+        const spaceTasks = tasksBySpace[space.name] || [];
+        const taskCount = spaceTasks.length;
+        const totalMinutes = spaceTasks.reduce((sum, task) => sum + (task.estimated_duration || 60), 0);
+
+        return {
+            space,
+            tasks: spaceTasks,
+            taskCount,
+            totalMinutes,
+            totalHours: (totalMinutes / 60).toFixed(1)
+        };
+    });
+
+    // Add unassigned space if there are unassigned tasks
+    if (unassignedTasks.length > 0) {
+        const totalMinutes = unassignedTasks.reduce((sum, task) => sum + (task.estimated_duration || 60), 0);
+        spaceMetrics.push({
+            space: { name: 'Unassigned', description: 'Tasks without a specific space' },
+            tasks: unassignedTasks,
+            taskCount: unassignedTasks.length,
+            totalMinutes,
+            totalHours: (totalMinutes / 60).toFixed(1)
+        });
+    }
+
+    // Calculate total for proportional sizing
+    const totalTaskCount = spaceMetrics.reduce((sum, m) => sum + m.taskCount, 0);
+    const totalTime = spaceMetrics.reduce((sum, m) => sum + m.totalMinutes, 0);
+
+    // Sort spaces by task count (descending) for better visual hierarchy
+    spaceMetrics.sort((a, b) => b.taskCount - a.taskCount);
+
+    // Render space cards with proportional sizing
+    const fragment = document.createDocumentFragment();
+
+    spaceMetrics.forEach(metric => {
+        if (metric.taskCount === 0) return; // Skip empty spaces
+
+        // Calculate proportional height based on task count and time
+        // Use a combination of task count (70%) and time (30%) for sizing
+        const taskCountRatio = totalTaskCount > 0 ? metric.taskCount / totalTaskCount : 0;
+        const timeRatio = totalTime > 0 ? metric.totalMinutes / totalTime : 0;
+        const sizeRatio = (taskCountRatio * 0.7) + (timeRatio * 0.3);
+
+        // Min height 150px, max proportional to content, scale based on ratio
+        const minHeight = 150;
+        const maxAdditionalHeight = 400;
+        const height = minHeight + (maxAdditionalHeight * sizeRatio);
+
+        const spaceCard = document.createElement('div');
+        spaceCard.className = 'space-card';
+        spaceCard.style.minHeight = `${height}px`;
+
+        spaceCard.innerHTML = `
+            <div class="space-card-header">
+                <div>
+                    <div class="space-card-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${escapeHtml(metric.space.name)}
+                    </div>
+                    <div class="space-card-meta">
+                        <div class="space-card-meta-item">
+                            <i class="fas fa-tasks"></i>
+                            <span>${metric.taskCount} task${metric.taskCount !== 1 ? 's' : ''}</span>
+                        </div>
+                        <div class="space-card-meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>${metric.totalHours}h</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="add-task-btn" onclick="openAddTaskForSpace('${escapeHtml(metric.space.name)}')">
+                    <i class="fas fa-plus"></i>
+                    Add Task
+                </button>
+            </div>
+            <div class="space-tasks" id="space-tasks-${escapeHtml(metric.space.name).replace(/\s+/g, '-')}">
+                ${renderSpaceTasks(metric.tasks)}
+            </div>
+        `;
+
+        fragment.appendChild(spaceCard);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(fragment);
+}
+
+// Render tasks within a space card
+function renderSpaceTasks(spaceTasks) {
+    if (spaceTasks.length === 0) {
+        return `
+            <div class="empty-space">
+                <i class="fas fa-inbox"></i>
+                <p>No tasks in this space</p>
+            </div>
+        `;
+    }
+
+    // Calculate urgency score for sorting
+    const now = new Date();
+    const tasksWithUrgency = spaceTasks.map(task => {
+        let urgencyScore = task.priority * 10;
+
+        if (task.deadline) {
+            const deadline = new Date(task.deadline);
+            const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
+
+            if (hoursUntilDeadline < 0) {
+                urgencyScore += 1000; // Overdue tasks are most urgent
+            } else if (hoursUntilDeadline <= 24) {
+                urgencyScore += 500;
+            } else if (hoursUntilDeadline <= 48) {
+                urgencyScore += 200;
+            } else if (hoursUntilDeadline <= 168) { // 1 week
+                urgencyScore += 100;
+            }
+        }
+
+        return { task, urgencyScore };
+    });
+
+    // Sort by urgency (descending)
+    tasksWithUrgency.sort((a, b) => b.urgencyScore - a.urgencyScore);
+
+    // Render tasks with vertical sizing based on duration
+    return tasksWithUrgency.map(({ task }) => {
+        const priorityClass = task.priority >= 7 ? 'priority-high' :
+                             task.priority >= 4 ? 'priority-medium' : 'priority-low';
+
+        const deadline = task.deadline ? new Date(task.deadline) : null;
+        const deadlineStr = deadline ? formatDeadline(deadline) : '';
+        const isSoon = deadline && (deadline - now) < 24 * 60 * 60 * 1000;
+
+        // Calculate height based on duration (min 60px, scale with duration)
+        const duration = task.estimated_duration || 60;
+        const minTaskHeight = 60;
+        const heightPerHour = 30;
+        const taskHeight = minTaskHeight + ((duration / 60) * heightPerHour);
+
+        return `
+            <div class="space-task-item ${priorityClass}"
+                 style="min-height: ${taskHeight}px"
+                 onclick="editTask(${task.id})">
+                <div class="space-task-content">
+                    <div class="space-task-title">
+                        ${task.frozen ? '❄️ ' : ''}${escapeHtml(task.title)}
+                    </div>
+                    <div class="space-task-meta">
+                        ${task.estimated_duration ?
+                            `<span><i class="fas fa-clock"></i> ${task.estimated_duration}min</span>` : ''}
+                        ${deadlineStr ?
+                            `<span class="${isSoon ? 'task-deadline soon' : ''}"><i class="fas fa-calendar-times"></i> ${deadlineStr}</span>` : ''}
+                        ${task.scheduled_start ?
+                            `<span><i class="fas fa-calendar-check"></i> Scheduled</span>` : ''}
+                        ${task.frozen ?
+                            `<span class="frozen-indicator"><i class="fas fa-snowflake"></i> Frozen</span>` : ''}
+                    </div>
+                </div>
+                <div class="space-task-priority ${priorityClass}">
+                    ${task.priority}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Open add task modal with pre-filled space
+function openAddTaskForSpace(spaceName) {
+    // Focus on task input and pre-fill space context in a user-friendly way
+    const taskInput = document.getElementById('taskInput');
+    taskInput.focus();
+
+    // Scroll to top to show the task input
+    document.querySelector('.task-panel').scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
+    // Store the selected space for when task is created
+    window.selectedSpaceForNewTask = spaceName;
+
+    // Add a visual indicator
+    const parseBtn = document.getElementById('parseTaskBtn');
+    const originalText = parseBtn.innerHTML;
+    parseBtn.innerHTML = `<i class="fas fa-magic"></i> Create Task for ${escapeHtml(spaceName)}`;
+
+    // Reset after 5 seconds or on input
+    const resetButton = () => {
+        parseBtn.innerHTML = originalText;
+        window.selectedSpaceForNewTask = null;
+        taskInput.removeEventListener('input', resetButton);
+    };
+
+    setTimeout(resetButton, 5000);
+    taskInput.addEventListener('input', resetButton, { once: true });
 }
