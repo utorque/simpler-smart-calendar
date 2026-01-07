@@ -8,6 +8,7 @@ let calendarModal;
 let addTaskModal;
 let sortable;
 let showCompletedTasks = false;
+let focusedSpace = localStorage.getItem('focusedSpace') || null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
@@ -26,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     loadTasks();
     loadSpaces();
+
+    // Set Overview as default view
+    switchView('overview');
 
     // Event listeners
     document.getElementById('parseTaskBtn').addEventListener('click', parseTask);
@@ -1159,8 +1163,14 @@ function renderSpaceCards() {
     const totalTaskCount = spaceMetrics.reduce((sum, m) => sum + m.taskCount, 0);
     const totalTime = spaceMetrics.reduce((sum, m) => sum + m.totalMinutes, 0);
 
-    // Sort spaces by task count (descending) for better visual hierarchy
-    spaceMetrics.sort((a, b) => b.taskCount - a.taskCount);
+    // Sort spaces: focused space first, then by task count (descending)
+    spaceMetrics.sort((a, b) => {
+        // Focused space always comes first
+        if (a.space.name === focusedSpace) return -1;
+        if (b.space.name === focusedSpace) return 1;
+        // Otherwise sort by task count
+        return b.taskCount - a.taskCount;
+    });
 
     // Render space cards with proportional sizing
     const fragment = document.createDocumentFragment();
@@ -1180,7 +1190,8 @@ function renderSpaceCards() {
         const height = minHeight + (maxAdditionalHeight * sizeRatio);
 
         const spaceCard = document.createElement('div');
-        spaceCard.className = 'space-card';
+        const isFocused = metric.space.name === focusedSpace;
+        spaceCard.className = `space-card ${isFocused ? 'focused' : ''}`;
         spaceCard.style.minHeight = `${height}px`;
 
         spaceCard.innerHTML = `
@@ -1189,6 +1200,7 @@ function renderSpaceCards() {
                     <div class="space-card-title">
                         <i class="fas fa-map-marker-alt"></i>
                         ${escapeHtml(metric.space.name)}
+                        ${isFocused ? '<span class="focused-badge"><i class="fas fa-thumbtack"></i> Focused</span>' : ''}
                     </div>
                     <div class="space-card-meta">
                         <div class="space-card-meta-item">
@@ -1201,10 +1213,17 @@ function renderSpaceCards() {
                         </div>
                     </div>
                 </div>
-                <button class="add-task-btn" onclick="openAddTaskForSpace('${escapeHtml(metric.space.name)}')">
-                    <i class="fas fa-plus"></i>
-                    Add Task
-                </button>
+                <div class="space-card-actions">
+                    <button class="focus-btn ${isFocused ? 'active' : ''}"
+                            onclick="toggleFocusSpace('${escapeHtml(metric.space.name)}')"
+                            title="${isFocused ? 'Unpin this space' : 'Pin this space to top'}">
+                        <i class="fas fa-thumbtack"></i>
+                    </button>
+                    <button class="add-task-btn" onclick="openAddTaskForSpace('${escapeHtml(metric.space.name)}')">
+                        <i class="fas fa-plus"></i>
+                        Add Task
+                    </button>
+                </div>
             </div>
             <div class="space-tasks" id="space-tasks-${escapeHtml(metric.space.name).replace(/\s+/g, '-')}">
                 ${renderSpaceTasks(metric.tasks)}
@@ -1370,4 +1389,20 @@ async function createTaskFromModal() {
 
     btn.innerHTML = originalText;
     btn.disabled = false;
+}
+
+// Toggle focus state for a space
+function toggleFocusSpace(spaceName) {
+    if (focusedSpace === spaceName) {
+        // Unfocus
+        focusedSpace = null;
+        localStorage.removeItem('focusedSpace');
+    } else {
+        // Focus this space
+        focusedSpace = spaceName;
+        localStorage.setItem('focusedSpace', spaceName);
+    }
+
+    // Re-render the overview
+    renderOverview();
 }

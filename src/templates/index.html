@@ -70,9 +70,9 @@
             <!-- Right Panel: Calendar/Overview (2/3) -->
             <div class="col-md-8 calendar-panel">
                 <div class="panel-header">
-                    <h3 id="viewTitle">Schedule</h3>
+                    <h3 id="viewTitle">Overview</h3>
                     <div class="panel-header-right">
-                        <div class="calendar-legend" id="calendarLegend">
+                        <div class="calendar-legend" id="calendarLegend" style="display: none;">
                             <span class="legend-item">
                                 <span class="badge bg-primary">My Tasks</span>
                             </span>
@@ -81,10 +81,10 @@
                             </span>
                         </div>
                         <div class="view-tabs">
-                            <button class="view-tab active" id="calendarTab" onclick="switchView('calendar')">
+                            <button class="view-tab" id="calendarTab" onclick="switchView('calendar')">
                                 <i class="fas fa-calendar"></i> Calendar
                             </button>
-                            <button class="view-tab" id="overviewTab" onclick="switchView('overview')">
+                            <button class="view-tab active" id="overviewTab" onclick="switchView('overview')">
                                 <i class="fas fa-chart-pie"></i> Overview
                             </button>
                         </div>
@@ -92,12 +92,12 @@
                 </div>
 
                 <!-- Calendar View -->
-                <div id="calendarView" class="view-content">
+                <div id="calendarView" class="view-content" style="display: none;">
                     <div id="calendar"></div>
                 </div>
 
                 <!-- Overview View -->
-                <div id="overviewView" class="view-content" style="display: none;">
+                <div id="overviewView" class="view-content">
                     <!-- Stats Section -->
                     <div class="overview-stats mb-4">
                         <div class="row g-3">

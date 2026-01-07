@@ -445,6 +445,11 @@ body {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
+.space-card.focused {
+    border: 2px solid #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 .space-card-header {
     display: flex;
     justify-content: space-between;
@@ -467,6 +472,19 @@ body {
     color: #667eea;
 }
 
+.focused-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
 .space-card-meta {
     display: flex;
     gap: 15px;
@@ -478,6 +496,43 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.space-card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.focus-btn {
+    background: white;
+    color: #667eea;
+    border: 2px solid #cbd5e0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.focus-btn:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+.focus-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.focus-btn.active:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
 }
 
 .add-task-btn {
@@ -594,8 +649,13 @@ body {
         gap: 10px;
     }
 
-    .add-task-btn {
+    .space-card-actions {
         width: 100%;
+        flex-direction: row;
+    }
+
+    .focus-btn, .add-task-btn {
+        flex: 1;
         justify-content: center;
     }
 }
