@@ -67,20 +67,92 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Calendar (2/3) -->
+            <!-- Right Panel: Calendar/Overview (2/3) -->
             <div class="col-md-8 calendar-panel">
                 <div class="panel-header">
-                    <h3>Schedule</h3>
-                    <div class="calendar-legend">
-                        <span class="legend-item">
-                            <span class="badge bg-primary">My Tasks</span>
-                        </span>
-                        <span class="legend-item">
-                            <span class="badge bg-secondary">External Events</span>
-                        </span>
+                    <h3 id="viewTitle">Schedule</h3>
+                    <div class="panel-header-right">
+                        <div class="calendar-legend" id="calendarLegend">
+                            <span class="legend-item">
+                                <span class="badge bg-primary">My Tasks</span>
+                            </span>
+                            <span class="legend-item">
+                                <span class="badge bg-secondary">External Events</span>
+                            </span>
+                        </div>
+                        <div class="view-tabs">
+                            <button class="view-tab active" id="calendarTab" onclick="switchView('calendar')">
+                                <i class="fas fa-calendar"></i> Calendar
+                            </button>
+                            <button class="view-tab" id="overviewTab" onclick="switchView('overview')">
+                                <i class="fas fa-chart-pie"></i> Overview
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div id="calendar"></div>
+
+                <!-- Calendar View -->
+                <div id="calendarView" class="view-content">
+                    <div id="calendar"></div>
+                </div>
+
+                <!-- Overview View -->
+                <div id="overviewView" class="view-content" style="display: none;">
+                    <!-- Stats Section -->
+                    <div class="overview-stats mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-tasks"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Total Tasks</div>
+                                        <div class="stat-value" id="statTotalTasks">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-clock"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Hours Planned</div>
+                                        <div class="stat-value" id="statHoursPlanned">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Scheduled</div>
+                                        <div class="stat-value" id="statScheduled">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-icon">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                    </div>
+                                    <div class="stat-content">
+                                        <div class="stat-label">Urgent</div>
+                                        <div class="stat-value" id="statUrgent">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Space Cards Container -->
+                    <div id="spaceCardsContainer" class="space-cards-container">
+                        <!-- Space cards will be dynamically rendered here -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -209,6 +281,34 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" id="saveCalendarBtn">Add Calendar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTaskModalTitle">Create Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea
+                        class="form-control"
+                        id="addTaskInput"
+                        rows="4"
+                        placeholder="Paste your email, describe your task, or just write what you need to do..."></textarea>
+                    <div class="form-text mt-2">
+                        Press Ctrl+Enter to create task quickly
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="createTaskFromModalBtn">
+                        <i class="fas fa-magic"></i> Create Task
+                    </button>
                 </div>
             </div>
         </div>

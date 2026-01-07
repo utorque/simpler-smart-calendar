@@ -121,6 +121,7 @@ def create_task():
 def parse_task():
     data = request.json
     text = data.get('text')
+    space_hint = data.get('space_hint')
 
     if not text:
         return jsonify({'error': 'No text provided'}), 400
@@ -132,6 +133,10 @@ def parse_task():
     spaces_info = "\n".join([f"- ID: {space.id}, Name: {space.name}, Description: {space.description}" for space in spaces])
 
     system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_info
+
+    # If space_hint is provided, add it to the system prompt
+    if space_hint:
+        system_prompt += f"\n\nIMPORTANT: This task should be assigned to the '{space_hint}' space unless the user explicitly specifies a different space."
 
     # parse_task_with_ai now returns a list of tasks
     tasks_data = parse_task_with_ai(text, system_prompt)
