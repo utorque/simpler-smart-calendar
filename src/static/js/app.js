@@ -11,7 +11,7 @@ let showCompletedTasks = false;
 let focusedSpace = localStorage.getItem('focusedSpace') || null;
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Initialize modals
     taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
     spaceModal = new bootstrap.Modal(document.getElementById('spaceModal'));
@@ -25,8 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSortable();
 
     // Load initial data
-    loadTasks();
-    loadSpaces();
+    await Promise.all([loadTasks(), loadSpaces()]);
 
     // Set Overview as default view
     switchView('overview');
@@ -90,6 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 editTask(taskId);
             }
         }
+    });
+
+    // Auto-focus on add task modal when shown
+    document.getElementById('addTaskModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('addTaskInput').focus();
     });
 });
 
@@ -1328,13 +1332,8 @@ function openAddTaskForSpace(spaceName) {
     // Clear the input
     document.getElementById('addTaskInput').value = '';
 
-    // Show the modal
+    // Show the modal (focus will be set by the shown.bs.modal event)
     addTaskModal.show();
-
-    // Focus on the textarea after modal is shown
-    setTimeout(() => {
-        document.getElementById('addTaskInput').focus();
-    }, 150);
 }
 
 // Create task from modal
