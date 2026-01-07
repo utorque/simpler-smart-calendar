@@ -43,7 +43,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const taskItem = e.target.closest('.task-item');
         if (taskItem) {
             const taskId = parseInt(taskItem.dataset.taskId);
-            editTask(taskId);
+            const isCtrl = e.ctrlKey || e.metaKey;
+
+            if (isCtrl) {
+                // Ctrl: Mark as done/undone
+                e.preventDefault();
+                toggleTaskCompletion(taskId);
+            } else {
+                // Normal click: Edit task
+                editTask(taskId);
+            }
         }
     });
 
@@ -58,6 +67,24 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('addTaskInput').addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
             createTaskFromModal();
+        }
+    });
+
+    // Event delegation for overview space task items
+    document.getElementById('spaceCardsContainer').addEventListener('click', (e) => {
+        const taskItem = e.target.closest('.space-task-item');
+        if (taskItem) {
+            const taskId = parseInt(taskItem.dataset.taskId);
+            const isCtrl = e.ctrlKey || e.metaKey;
+
+            if (isCtrl) {
+                // Ctrl: Mark as done/undone
+                e.preventDefault();
+                toggleTaskCompletion(taskId);
+            } else {
+                // Normal click: Edit task
+                editTask(taskId);
+            }
         }
     });
 });
@@ -340,12 +367,12 @@ function handleEventClick(info) {
         const isCtrl = info.jsEvent.ctrlKey || info.jsEvent.metaKey;
         const isShift = info.jsEvent.shiftKey;
 
-        if (isCtrl && isShift) {
-            // Shift+Ctrl: Mark as done/undone
+        if (isCtrl) {
+            // Ctrl: Mark as done/undone
             info.jsEvent.preventDefault();
             toggleTaskCompletion(event.extendedProps.taskId);
-        } else if (isCtrl) {
-            // Ctrl only: Toggle freeze
+        } else if (isShift) {
+            // Shift: Toggle freeze
             info.jsEvent.preventDefault();
             toggleTaskFreeze(event.extendedProps.taskId);
         } else {
@@ -538,6 +565,11 @@ async function toggleTaskCompletion(taskId) {
             !task.completed ? '✓ Task marked as done!' : 'Task marked as incomplete',
             !task.completed ? 'success' : 'info'
         );
+
+        // Update overview if we're on that view
+        if (document.getElementById('overviewView').style.display !== 'none') {
+            renderOverview();
+        }
     } else {
         showAlert('Error updating task', 'danger');
     }
@@ -1241,7 +1273,7 @@ function renderSpaceTasks(spaceTasks) {
         return `
             <div class="space-task-item ${priorityClass}"
                  style="min-height: ${taskHeight}px"
-                 onclick="editTask(${task.id})">
+                 data-task-id="${task.id}">
                 <div class="space-task-content">
                     <div class="space-task-title">
                         ${task.frozen ? '❄️ ' : ''}${escapeHtml(task.title)}
