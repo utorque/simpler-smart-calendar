@@ -1,7 +1,7 @@
 # PRD: Notes (ADHD-friendly in-app note capture with promote-to-task and Cleanify)
 
 - **ID**: 001
-- **Status**: Aligned
+- **Status**: Done
 - **File**: `001_PRD_notes.md`
 - **Parent vision**: `000_PrePRD_unified-adhd-workspace.md`
 

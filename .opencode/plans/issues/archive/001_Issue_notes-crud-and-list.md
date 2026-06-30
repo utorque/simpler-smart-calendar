@@ -1,7 +1,7 @@
 # Issue: Notes CRUD routes + list/editor page + deferred persistence + ChangeLog
 
 <!-- Kanban status — update as work progresses: TODO | DOING | DONE | BLOCKED <one-line reason> | CANCELLED -->
-**Status:** TODO
+**Status:** DONE
 
 - **ID**: 001
 - **Parent PRD**: `001_PRD_notes.md`

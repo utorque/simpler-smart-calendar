@@ -21,7 +21,16 @@ class AIProvider:
     def parse_task(self, text: str, system_prompt: str) -> List[Dict[str, Any]]:
         """Parse text and return task information"""
         raise NotImplementedError
-    
+
+    def cleanify(self, note_text: str, system_prompt: str) -> str:
+        """Tidy a note's markdown text via the LLM, returning raw model text.
+
+        Mirrors `parse_task`'s HTTP setup but returns the raw model text rather
+        than extracting a JSON list of task dicts. No JSON parsing is performed
+        on the response.
+        """
+        raise NotImplementedError
+
     def _process_response(self, response_text: str) -> List[Dict[str, Any]]:
         """Process raw response text to extract task data"""
         # Try to extract JSON from the response
@@ -136,6 +145,36 @@ class OpenAIProvider(AIProvider):
                 'estimated_duration': 60
             }]
 
+    def cleanify(self, note_text: str, system_prompt: str) -> str:
+        """Use OpenAI-compatible API to tidy a note. Returns raw model text."""
+        if not self.api_key:
+            # No API key: return the input unchanged (let the factory degrade).
+            return note_text
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+        data = {
+            "model": self.model or "gpt-3.5-turbo",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": note_text}
+            ],
+            "max_tokens": 2048,
+            "temperature": 0.3
+        }
+
+        response = requests.post(
+            f"{self.base_url}/chat/completions" if self.base_url else "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        response.raise_for_status()
+        return response.json()['choices'][0]['message']['content']
+
 
 class AnthropicProvider(AIProvider):
     """Anthropic Claude provider"""
@@ -193,6 +232,23 @@ class AnthropicProvider(AIProvider):
                 'estimated_duration': 60
             }]
 
+    def cleanify(self, note_text: str, system_prompt: str) -> str:
+        """Use Anthropic Claude to tidy a note. Returns raw model text."""
+        if not self.api_key or not self.client:
+            # No API key / no client: return input unchanged (factory degrades).
+            return note_text
+
+        response = self.client.messages.create(
+            model=self.model or "claude-haiku-4-5",
+            max_tokens=2048,
+            temperature=0.3,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": note_text}
+            ]
+        )
+        return response.content[0].text
+
 
 def get_ai_provider() -> AIProvider:
     """Get the appropriate AI provider based on environment variables"""
@@ -225,3 +281,19 @@ def parse_task_with_ai(text: str, system_prompt: str) -> List[Dict[str, Any]]:
     """
     provider = get_ai_provider()
     return provider.parse_task(text, system_prompt)
+
+
+def cleanify_note_with_ai(note_text: str, system_prompt: str) -> str:
+    """
+    Tidy a note's markdown text via AI. Returns cleaned text on success.
+
+    Graceful degradation: on ANY exception or empty/None response, returns the
+    input `note_text` unchanged. No exception escapes to the caller.
+    """
+    try:
+        result = get_ai_provider().cleanify(note_text, system_prompt)
+        if not result:
+            return note_text
+        return result
+    except Exception:
+        return note_text

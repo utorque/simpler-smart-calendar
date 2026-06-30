@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from datetime import datetime, timedelta
-from models import db, Task, Space, ChangeLog, CalendarSource
+from models import db, Task, Space, ChangeLog, CalendarSource, Note
 from config import Config
 import json
 import os
-from ai_parser import parse_task_with_ai
+from ai_parser import parse_task_with_ai, cleanify_note_with_ai
 from scheduler import schedule_tasks
 from calendar_integration import fetch_external_events
 
@@ -494,6 +494,158 @@ def get_logs():
     limit = request.args.get('limit', 100, type=int)
     logs = ChangeLog.query.order_by(ChangeLog.timestamp.desc()).limit(limit).all()
     return jsonify([log.to_dict() for log in logs])
+
+
+# Note endpoints
+@app.route('/api/notes', methods=['GET'])
+@login_required
+def get_notes():
+    space_id = request.args.get('space_id', type=int)
+    query = Note.query
+    if space_id is not None:
+        query = query.filter_by(space_id=space_id)
+    notes = query.order_by(Note.updated_at.desc()).all()
+    return jsonify([note.to_dict() for note in notes])
+
+
+@app.route('/api/notes', methods=['POST'])
+@login_required
+def create_note():
+    data = request.json or {}
+    space_id = data.get('space_id')
+    if space_id is None:
+        return jsonify({'error': 'space_id is required'}), 400
+
+    note = Note(
+        space_id=space_id,
+        title=data.get('title'),
+        content_markdown=data.get('content_markdown', ''),
+    )
+    db.session.add(note)
+    db.session.commit()
+
+    log = ChangeLog(
+        action='create',
+        entity_type='note',
+        entity_id=note.id,
+        new_value=json.dumps(note.to_dict()),
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify(note.to_dict())
+
+
+@app.route('/api/notes/<int:note_id>', methods=['GET'])
+@login_required
+def get_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    return jsonify(note.to_dict())
+
+
+@app.route('/api/notes/<int:note_id>', methods=['PUT'])
+@login_required
+def update_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    old_value = note.to_dict()
+    data = request.json or {}
+
+    if 'title' in data:
+        note.title = data['title']
+    if 'content_markdown' in data:
+        note.content_markdown = data['content_markdown']
+    if 'space_id' in data:
+        note.space_id = data['space_id']
+
+    db.session.commit()
+
+    log = ChangeLog(
+        action='update',
+        entity_type='note',
+        entity_id=note.id,
+        old_value=json.dumps(old_value),
+        new_value=json.dumps(note.to_dict()),
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return jsonify(note.to_dict())
+
+
+@app.route('/api/notes/<int:note_id>', methods=['DELETE'])
+@login_required
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    old_value = note.to_dict()
+
+    db.session.delete(note)
+    db.session.commit()
+
+    log = ChangeLog(
+        action='delete',
+        entity_type='note',
+        entity_id=note_id,
+        old_value=json.dumps(old_value),
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    return '', 204
+
+
+@app.route('/api/notes/<int:note_id>/cleanify', methods=['POST'])
+@login_required
+def cleanify_note(note_id):
+    note = Note.query.get_or_404(note_id)
+
+    space = note.space_rel
+    system_prompt = app.config['NOTES_CLEANIFY_PROMPT']
+    system_prompt += (
+        f"\n\nNote's Space context:\nName: {space.name}\n"
+        f"Description: {space.description or ''}"
+    )
+
+    content = cleanify_note_with_ai(note.content_markdown, system_prompt)
+    return jsonify({'content': content})
+
+
+@app.route('/api/notes/<int:note_id>/promote-to-task', methods=['POST'])
+@login_required
+def promote_note_to_task(note_id):
+    note = Note.query.get_or_404(note_id)
+
+    data = request.get_json(silent=True) or {}
+    selected_text = data.get('selected_text')
+
+    # Build the system prompt EXACTLY like /api/tasks/parse does, so the LLM
+    # sees the same space-list context it sees for the AI task creator.
+    spaces = Space.query.all()
+    spaces_info = "\n".join([
+        f"- ID: {space.id}, Name: {space.name}, Description: {space.description}"
+        for space in spaces
+    ])
+    system_prompt = app.config['SYSTEM_PROMPT'] + "\n\nAvailable spaces:\n" + spaces_info
+
+    # Reuse the existing AI parse path (no new AI code path; PRD decision G).
+    drafts = parse_task_with_ai(selected_text, system_prompt)
+
+    # Default each draft's space_id to the note's space_id when the LLM did not
+    # pick one (default, NOT override — LLM-chosen spaces are left alone).
+    for draft in drafts:
+        if draft.get('space_id') is None:
+            draft['space_id'] = note.space_id
+
+    # Return the draft DTO list. The client opens a confirm modal pre-filled
+    # with these drafts; the existing POST /api/tasks persists them. This
+    # route persists NOTHING and does NOT modify the note.
+    return jsonify(drafts)
+
+
+@app.route('/notes')
+def notes_page():
+    if not session.get('authenticated'):
+        return redirect(url_for('login'))
+    return render_template('notes.html')
 
 
 # Initialize database

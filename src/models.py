@@ -101,6 +101,29 @@ class ChangeLog(db.Model):
         }
 
 
+class Note(db.Model):
+    __tablename__ = 'notes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    title = db.Column(db.String(500))
+    content_markdown = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    space_rel = db.relationship('Space', backref='notes', foreign_keys=[space_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'space_id': self.space_id,
+            'title': self.title,
+            'content_markdown': self.content_markdown or '',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class CalendarSource(db.Model):
     __tablename__ = 'calendar_sources'
 

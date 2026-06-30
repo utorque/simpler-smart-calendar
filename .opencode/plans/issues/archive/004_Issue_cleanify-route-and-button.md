@@ -1,7 +1,7 @@
 # Issue: Cleanify route + EasyMDE Cleanify/Undo toolbar button
 
 <!-- Kanban status — update as work progresses: TODO | DOING | DONE | BLOCKED <one-line reason> | CANCELLED -->
-**Status:** TODO
+**Status:** DONE
 
 - **ID**: 004
 - **Parent PRD**: `001_PRD_notes.md`

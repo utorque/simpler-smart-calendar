@@ -1,7 +1,7 @@
 # Issue: AIProvider.cleanify method + cleanify_note_with_ai factory
 
 <!-- Kanban status — update as work progresses: TODO | DOING | DONE | BLOCKED <one-line reason> | CANCELLED -->
-**Status:** TODO
+**Status:** DONE
 
 - **ID**: 002
 - **Parent PRD**: `001_PRD_notes.md`

@@ -1,7 +1,7 @@
 # Issue: notes_cleanify.md prompt file + Config load
 
 <!-- Kanban status — update as work progresses: TODO | DOING | DONE | BLOCKED <one-line reason> | CANCELLED -->
-**Status:** TODO
+**Status:** DONE
 
 - **ID**: 003
 - **Parent PRD**: `001_PRD_notes.md`

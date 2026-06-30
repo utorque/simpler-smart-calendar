@@ -3,6 +3,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Default fallback for the Cleanify prompt if the file is ever missing at
+# startup (it is not expected to be, but Config must never crash app boot).
+_NOTES_CLEANIFY_PROMPT_DEFAULT = (
+    "You are a tidying assistant. Rewrite the note to make it more readable "
+    "without changing its meaning. Tidy punctuation, normalize line breaks "
+    "and list formatting. Do not invent facts, summarize away specifics, "
+    "rename entities, or restate clear sections. If a section's intent is "
+    "unclear, leave it unchanged rather than guessing. Output only the tidied "
+    "note in markdown."
+)
+
+
 # Load system prompt once on startup
 def load_system_prompt():
     prompt_path = os.path.join(os.path.dirname(__file__), 'prompt.md')
@@ -11,6 +23,18 @@ def load_system_prompt():
             return f.read()
     except FileNotFoundError:
         return "You are a task parsing assistant. Extract task information and return JSON."
+
+
+# Load the Cleanify system prompt once on startup (sibling to load_system_prompt).
+# Loaded once at import time of config.py and cached on Config.NOTES_CLEANIFY_PROMPT;
+# no per-request file reads on the hot path.
+def load_notes_cleanify_prompt():
+    prompt_path = os.path.join(os.path.dirname(__file__), 'prompts', 'notes_cleanify.md')
+    try:
+        with open(prompt_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return _NOTES_CLEANIFY_PROMPT_DEFAULT
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -23,3 +47,4 @@ class Config:
     APP_PASSWORD = os.getenv('APP_PASSWORD', 'admin')
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
     SYSTEM_PROMPT = load_system_prompt()
+    NOTES_CLEANIFY_PROMPT = load_notes_cleanify_prompt()
